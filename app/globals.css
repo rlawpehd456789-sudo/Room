@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-white: #FFFFFF;
+  --primary-gray: #F7F7F7;
+  --primary-blue: #2A52BE;
+  --primary-dark: #292929;
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  color: var(--primary-dark);
+  background-color: var(--primary-white);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
