@@ -1,38 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Header from '@/components/Header'
 import PostCard from '@/components/PostCard'
 import { useStore } from '@/store/useStore'
-import { Component } from '@/components/ui/animated-menu'
 
 export default function Home() {
   const { posts, user, following, setFollowing } = useStore()
   const [feedType, setFeedType] = useState<'all' | 'following'>('following')
-
-  // 소개글 항목들
-  const introductionItems = [
-    {
-      name: "HOME",
-      type: "title" as const,
-    },
-    {
-      name: "SIGNUP",
-      type: "description" as const,
-    },
-    {
-      name: "LOGIN",
-      type: "description" as const,
-    },
-    {
-      name: "MYFEED",
-      type: "description" as const,
-    },
-    {
-      name: "FOLLOWERFEED",
-      type: "description" as const,
-    },
-  ]
 
   useEffect(() => {
     // 초기 데이터 로드 (로컬 스토리지에서)
@@ -118,32 +94,21 @@ export default function Home() {
       <Header />
       <main>
         {/* 소개글 섹션 */}
-        <section className="bg-white border-b border-primary-gray min-h-screen flex items-center pt-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-24">
-            <div className="text-center max-w-4xl mx-auto">
-              <ul className="flex min-h-full w-full flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl px-7 py-3 backdrop-blur-sm">
-                {introductionItems.map((item, index) => (
-                  <li
-                    className="relative flex cursor-pointer flex-col items-center overflow-visible"
-                    key={index}
-                  >
-                    <div className="relative flex items-start">
-                      <Component
-                        center
-                        className={
-                          item.type === "title"
-                            ? "text-6xl font-extrabold uppercase leading-[0.8] tracking-[-0.03em] transition-colors lg:text-7xl text-primary-blue"
-                            : "text-3xl md:text-4xl lg:text-5xl font-extrabold uppercase leading-[0.8] tracking-[-0.03em] transition-colors text-primary-blue"
-                        }
-                      >
-                        {item.name}
-                      </Component>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+        <section className="relative bg-white border-b border-primary-gray min-h-screen flex items-center pt-16 overflow-hidden">
+          {/* 배경 이미지 */}
+          <div className="absolute inset-0 z-0">
+            <Image
+              src="/소개페이지4.jpeg"
+              alt="Background"
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
+          
+          {/* 오버레이 (텍스트 가독성 향상) */}
+          <div className="absolute inset-0 bg-black/10 z-[1]" />
+          
         </section>
 
         {/* 팔로우 피드 섹션 */}
