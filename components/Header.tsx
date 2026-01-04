@@ -1,13 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Plus, User, LogOut } from 'lucide-react'
 import { useStore } from '@/store/useStore'
 import { Component } from '@/components/ui/animated-menu'
 
 export default function Header() {
-  const pathname = usePathname()
   const router = useRouter()
   const { user, setUser } = useStore()
 
@@ -27,6 +26,7 @@ export default function Header() {
     {
       name: "MYFEED",
       type: "description" as const,
+      onClick: user ? () => router.push(`/profile/${user.id}`) : undefined,
     },
     {
       name: "FOLLOWER",
@@ -34,23 +34,45 @@ export default function Header() {
     },
   ]
 
-  // 오른쪽 메뉴 항목들
+  // 오른쪽 메뉴 항목들 (로그인 상태에 따라 변경)
   const rightMenuItems: Array<{
     name: string
     type: "description"
     onClick?: () => void
-  }> = [
-    {
-      name: "SIGNUP",
-      type: "description" as const,
-      onClick: () => router.push('/auth/register'),
-    },
-    {
-      name: "LOGIN",
-      type: "description" as const,
-      onClick: () => router.push('/auth/login'),
-    },
-  ]
+    icon?: React.ReactNode
+  }> = user
+    ? [
+        {
+          name: "POST",
+          type: "description" as const,
+          onClick: () => router.push('/post/create'),
+          icon: <Plus size={20} className="text-primary-blue" />,
+        },
+        {
+          name: "PROFILE",
+          type: "description" as const,
+          onClick: () => router.push(`/profile/${user.id}`),
+          icon: <User size={20} className="text-primary-blue" />,
+        },
+        {
+          name: "LOGOUT",
+          type: "description" as const,
+          onClick: handleLogout,
+          icon: <LogOut size={20} className="text-primary-blue" />,
+        },
+      ]
+    : [
+        {
+          name: "SIGNUP",
+          type: "description" as const,
+          onClick: () => router.push('/auth/register'),
+        },
+        {
+          name: "LOGIN",
+          type: "description" as const,
+          onClick: () => router.push('/auth/login'),
+        },
+      ]
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-primary-gray z-50">
@@ -80,14 +102,15 @@ export default function Header() {
           </div>
 
           <div className="flex items-center gap-6">
-            {/* 오른쪽 메뉴 (SIGNUP, LOGIN) */}
+            {/* 오른쪽 메뉴 (SIGNUP, LOGIN / POST, PROFILE, LOGOUT) */}
             <ul className="hidden md:flex items-center gap-3 lg:gap-4">
               {rightMenuItems.map((item, index) => (
                 <li
-                  className="relative flex cursor-pointer items-center overflow-visible"
+                  className="relative flex cursor-pointer items-center overflow-visible gap-2"
                   key={index}
                   onClick={item.onClick}
                 >
+                  {item.icon && item.icon}
                   <Component
                     className="text-sm lg:text-base font-extrabold uppercase leading-[0.8] tracking-[0.15em] transition-colors text-primary-blue"
                   >
@@ -96,38 +119,6 @@ export default function Header() {
                 </li>
               ))}
             </ul>
-
-            <nav className="flex items-center gap-6">
-              {user ? (
-                <>
-                  <Link
-                    href="/post/create"
-                    className="flex items-center gap-2 text-primary-dark hover:text-primary-blue"
-                  >
-                    <Plus size={20} />
-                    <span className="hidden sm:inline">投稿</span>
-                  </Link>
-                  <Link
-                    href={`/profile/${user.id}`}
-                    className={`flex items-center gap-2 ${
-                      pathname?.startsWith('/profile')
-                        ? 'text-primary-blue'
-                        : 'text-primary-dark hover:text-primary-blue'
-                    }`}
-                  >
-                    <User size={20} />
-                    <span className="hidden sm:inline">プロフィール</span>
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 text-primary-dark hover:text-primary-blue"
-                  >
-                    <LogOut size={20} />
-                    <span className="hidden sm:inline">ログアウト</span>
-                  </button>
-                </>
-              ) : null}
-            </nav>
           </div>
         </div>
       </div>
