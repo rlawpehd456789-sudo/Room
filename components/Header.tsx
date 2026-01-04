@@ -43,7 +43,7 @@ export default function Header() {
     {
       name: "SIGNUP",
       type: "description" as const,
-      onClick: () => router.push('/auth/login'),
+      onClick: () => router.push('/auth/register'),
     },
     {
       name: "LOGIN",

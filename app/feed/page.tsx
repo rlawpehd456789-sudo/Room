@@ -97,11 +97,11 @@ export default function FeedPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-primary-dark mb-2">
-                  {feedType === 'following' ? '팔로우 피드' : '最新の投稿'}
+                  {feedType === 'following' ? 'FOLLOWER FEED' : '最新の投稿'}
                 </h2>
                 <p className="text-gray-600">
                   {feedType === 'following'
-                    ? '팔로우한 사용자의 게시물을 확인하세요'
+                    ? 'フォローユーザーの投稿をご覧ください'
                     : 'みんなの部屋のインテリアを見てみましょう'}
                 </p>
               </div>
