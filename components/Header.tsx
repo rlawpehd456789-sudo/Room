@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, User, LogOut } from 'lucide-react'
+import { Plus, User, LogOut, Search } from 'lucide-react'
 import { useStore } from '@/store/useStore'
 import { Component } from '@/components/ui/animated-menu'
 
@@ -43,22 +43,28 @@ export default function Header() {
   }> = user
     ? [
         {
+          name: "SEARCH",
+          type: "description" as const,
+          onClick: () => router.push('/search'),
+          icon: <Search size={24} className="text-primary-blue" />,
+        },
+        {
           name: "POST",
           type: "description" as const,
           onClick: () => router.push('/post/create'),
-          icon: <Plus size={20} className="text-primary-blue" />,
+          icon: <Plus size={24} className="text-primary-blue" />,
         },
         {
           name: "PROFILE",
           type: "description" as const,
           onClick: () => router.push(`/profile/${user.id}`),
-          icon: <User size={20} className="text-primary-blue" />,
+          icon: <User size={24} className="text-primary-blue" />,
         },
         {
           name: "LOGOUT",
           type: "description" as const,
           onClick: handleLogout,
-          icon: <LogOut size={20} className="text-primary-blue" />,
+          icon: <LogOut size={24} className="text-primary-blue" />,
         },
       ]
     : [
@@ -111,11 +117,6 @@ export default function Header() {
                   onClick={item.onClick}
                 >
                   {item.icon && item.icon}
-                  <Component
-                    className="text-sm lg:text-base font-extrabold uppercase leading-[0.8] tracking-[0.15em] transition-colors text-primary-blue"
-                  >
-                    {item.name}
-                  </Component>
                 </li>
               ))}
             </ul>
