@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import { useStore } from '@/store/useStore'
@@ -74,8 +74,13 @@ export default function OnboardingPage() {
     router.push('/feed')
   }
 
+  useEffect(() => {
+    if (!user) {
+      router.push('/auth/login')
+    }
+  }, [user, router])
+
   if (!user) {
-    router.push('/auth/login')
     return null
   }
 

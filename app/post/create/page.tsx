@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, Plus, Tag } from 'lucide-react'
 import Header from '@/components/Header'
@@ -16,8 +16,13 @@ export default function CreatePostPage() {
   const [tagInput, setTagInput] = useState('')
   const [isPublic, setIsPublic] = useState(true)
 
+  useEffect(() => {
+    if (!user) {
+      router.push('/auth/login')
+    }
+  }, [user, router])
+
   if (!user) {
-    router.push('/auth/login')
     return null
   }
 
