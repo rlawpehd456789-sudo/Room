@@ -19,7 +19,7 @@ export default function PostDetailPage() {
   const post = posts.find((p) => p.id === postId)
 
   useEffect(() => {
-    // 로컬 스토리지에서 사용자 정보 로드
+    // ローカルストレージからユーザー情報を読み込む
     if (typeof window !== 'undefined') {
       if (!user) {
         const savedUser = localStorage.getItem('my-room-user')
@@ -27,7 +27,7 @@ export default function PostDetailPage() {
           useStore.getState().setUser(JSON.parse(savedUser))
         }
       }
-      // 팔로우 목록 로드
+      // フォローリストを読み込む
       if (user) {
         const savedFollowing = localStorage.getItem(`my-room-following-${user.id}`)
         if (savedFollowing) {

@@ -9,7 +9,7 @@ import { motion } from 'framer-motion'
 
 export default function Home() {
   const { posts, user, following, setFollowing } = useStore()
-  const [feedType, setFeedType] = useState<'all' | 'following'>('following')
+  const [feedType, setFeedType] = useState<'all' | 'following'>('all')
   const [scrollDirection, setScrollDirection] = useState<'down' | 'up'>('down')
   const [lastScrollY, setLastScrollY] = useState(0)
 
@@ -172,24 +172,24 @@ export default function Home() {
                     transition={{ duration: scrollDirection === 'down' ? 0.6 : 0, delay: scrollDirection === 'down' ? 0.3 : 0, ease: "easeOut" }}
                   >
                     <button
-                      onClick={() => setFeedType('following')}
-                      className={`px-4 py-2 rounded-md font-semibold transition-colors ${
-                        feedType === 'following'
-                          ? 'bg-primary-blue text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      팔로우
-                    </button>
-                    <button
                       onClick={() => setFeedType('all')}
-                      className={`px-4 py-2 rounded-md font-semibold transition-colors ${
+                      className={`px-4 py-2 rounded-md font-semibold transition-colors whitespace-nowrap text-center ${
                         feedType === 'all'
                           ? 'bg-primary-blue text-white'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
                     >
-                      전체
+                      すべて
+                    </button>
+                    <button
+                      onClick={() => setFeedType('following')}
+                      className={`px-4 py-2 rounded-md font-semibold transition-colors whitespace-nowrap text-center ${
+                        feedType === 'following'
+                          ? 'bg-primary-blue text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      フォロー
                     </button>
                   </motion.div>
                 )}
