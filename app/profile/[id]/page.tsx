@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { UserPlus, UserMinus } from 'lucide-react'
 import Header from '@/components/Header'
 import PostCard from '@/components/PostCard'
@@ -9,6 +9,7 @@ import { useStore } from '@/store/useStore'
 
 export default function ProfilePage() {
   const params = useParams()
+  const router = useRouter()
   const { user, posts, followUser, unfollowUser, isFollowing, setFollowing } = useStore()
   const profileUserId = params.id as string
   const isOwnProfile = user?.id === profileUserId
@@ -145,7 +146,18 @@ export default function ProfilePage() {
 
           {/* 投稿一覧 */}
           <div>
-            <h2 className="text-2xl font-bold mb-6">投稿 ({userPosts.length})</h2>
+            <div className="flex items-center gap-3 mb-6">
+              <h2 className="text-2xl font-bold">投稿</h2>
+              {isOwnProfile && (
+                <button
+                  onClick={() => router.push('/post/create')}
+                  className="text-2xl hover:scale-110 transition-transform cursor-pointer"
+                  title="新しい投稿を作成"
+                >
+                  ➕
+                </button>
+              )}
+            </div>
             {userPosts.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm p-12 text-center">
                 <p className="text-gray-500">まだ投稿がありません</p>
