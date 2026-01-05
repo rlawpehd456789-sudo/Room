@@ -55,7 +55,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-primary-gray">
         <Header />
-        <main className="pt-16 pb-8">
+        <main className="pt-20 pb-8">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <p className="text-center py-12 text-gray-500">
               {userPosts.length === 0 
@@ -71,10 +71,10 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-primary-gray">
       <Header />
-      <main className="pt-16 pb-8">
+      <main className="pt-20 pb-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* プロフィールヘッダー */}
-          <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-8 mb-6 mt-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               {displayUser.avatar ? (
                 <img

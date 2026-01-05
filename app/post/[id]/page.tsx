@@ -41,7 +41,7 @@ export default function PostDetailPage() {
     return (
       <div className="min-h-screen bg-primary-gray">
         <Header />
-        <main className="pt-16 pb-8">
+        <main className="pt-20 pb-8">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-lg shadow-sm p-12 text-center mt-8">
               <p className="text-gray-500 mb-4">投稿が見つかりません</p>

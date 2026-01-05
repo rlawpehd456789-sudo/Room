@@ -31,6 +31,7 @@ export default function Header() {
     {
       name: "FOLLOWER",
       type: "description" as const,
+      onClick: () => router.push('/feed'),
     },
   ]
 
@@ -116,7 +117,15 @@ export default function Header() {
                   key={index}
                   onClick={item.onClick}
                 >
-                  {item.icon && item.icon}
+                  {item.icon ? (
+                    item.icon
+                  ) : (
+                    <Component
+                      className="text-sm lg:text-base font-extrabold uppercase leading-[0.8] tracking-[0.15em] transition-colors text-primary-blue"
+                    >
+                      {item.name}
+                    </Component>
+                  )}
                 </li>
               ))}
             </ul>

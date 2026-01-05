@@ -31,13 +31,13 @@ export default function LoginPage() {
     }
 
     setUser(user)
-    router.push('/onboarding')
+    router.push('/feed')
   }
 
   return (
     <div className="min-h-screen bg-primary-gray">
       <Header />
-      <main className="pt-16 pb-8">
+      <main className="pt-20 pb-8">
         <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow-sm p-8 mt-8">
             <h1 className="text-3xl font-bold text-center mb-8">ログイン</h1>

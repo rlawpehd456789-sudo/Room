@@ -48,7 +48,7 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-primary-gray">
       <Header />
-      <main className="pt-16 pb-8">
+      <main className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-primary-dark mb-4">検索</h2>

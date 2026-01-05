@@ -115,7 +115,7 @@ export default function Home() {
       <Header />
       <main>
         {/* 소개글 섹션 */}
-        <section className="relative bg-white border-b border-primary-gray min-h-screen flex items-center pt-16 overflow-hidden">
+        <section className="relative bg-white border-b border-primary-gray min-h-screen flex items-center pt-20 overflow-hidden">
           {/* 배경 이미지 */}
           <motion.div 
             className="absolute inset-0 z-0"

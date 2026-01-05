@@ -87,7 +87,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-primary-gray">
       <Header />
-      <main className="pt-16 pb-8">
+      <main className="pt-20 pb-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow-sm p-8 mt-8">
             <div className="mb-8">

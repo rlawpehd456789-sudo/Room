@@ -91,7 +91,7 @@ export default function FeedPage() {
   return (
     <div className="min-h-screen bg-primary-gray">
       <Header />
-      <main className="pt-16 pb-8">
+      <main className="pt-18 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">

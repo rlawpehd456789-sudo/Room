@@ -26,7 +26,7 @@ export default function OAuthCallbackPage() {
       }
 
       setUser(user)
-      router.push('/onboarding')
+      router.push('/feed')
     } else {
       router.push('/auth/register?error=oauth_failed')
     }
@@ -35,7 +35,7 @@ export default function OAuthCallbackPage() {
   return (
     <div className="min-h-screen bg-primary-gray">
       <Header />
-      <main className="pt-16 pb-8">
+      <main className="pt-20 pb-8">
         <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow-sm p-8 mt-8">
             <div className="text-center">
