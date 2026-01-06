@@ -111,12 +111,12 @@ export default function ProfilePage() {
                       {following ? (
                         <>
                           <UserMinus size={18} />
-                          <span>언팔로우</span>
+                          <span>フォロー中</span>
                         </>
                       ) : (
                         <>
                           <UserPlus size={18} />
-                          <span>팔로우</span>
+                          <span>フォロー</span>
                         </>
                       )}
                     </button>

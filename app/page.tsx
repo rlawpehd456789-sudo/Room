@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import Header from '@/components/Header'
 import PostCard from '@/components/PostCard'
@@ -13,7 +13,7 @@ export default function Home() {
   const [scrollDirection, setScrollDirection] = useState<'down' | 'up'>('down')
   const [lastScrollY, setLastScrollY] = useState(0)
 
-  // 스크롤 방향 감지
+  // スクロール方向の検出
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY
@@ -32,91 +32,127 @@ export default function Home() {
   }, [lastScrollY])
 
   useEffect(() => {
-    // 초기 데이터 로드 (로컬 스토리지에서)
+    // 初期データの読み込み（ローカルストレージから）
     if (typeof window !== 'undefined') {
       const savedUser = localStorage.getItem('my-room-user')
       if (savedUser && !user) {
         useStore.getState().setUser(JSON.parse(savedUser))
       }
+    }
+  }, [user])
 
-      // 팔로우 목록 로드
-      if (user) {
-        const savedFollowing = localStorage.getItem(`my-room-following-${user.id}`)
-        if (savedFollowing) {
-          setFollowing(JSON.parse(savedFollowing))
+  useEffect(() => {
+    // フォローリストの読み込み（userが変更されるたびに）
+    if (typeof window !== 'undefined' && user) {
+      const savedFollowing = localStorage.getItem(`my-room-following-${user.id}`)
+      if (savedFollowing) {
+        const followingList = JSON.parse(savedFollowing)
+        if (Array.isArray(followingList)) {
+          setFollowing(followingList)
         }
-      }
-
-      // 샘플 데이터 (개발용)
-      if (posts.length === 0) {
-        const samplePosts = [
-          {
-            id: '1',
-            userId: 'user1',
-            userName: '田中太郎',
-            images: [
-              'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
-            ],
-            title: 'シンプルなワンルーム',
-            description: 'ミニマルなインテリアで快適な空間を作りました。',
-            tags: ['ミニマル', 'ワンルーム', 'DIY'],
-            likes: 42,
-            liked: false,
-            comments: [],
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-          },
-          {
-            id: '2',
-            userId: 'user2',
-            userName: '佐藤花子',
-            images: [
-              'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
-            ],
-            title: 'ナチュラルな1K',
-            description: '観葉植物をたくさん置いて、自然を感じられる空間に。',
-            tags: ['ナチュラル', 'グリーン', '1K'],
-            likes: 89,
-            liked: false,
-            comments: [],
-            createdAt: new Date(Date.now() - 7200000).toISOString(),
-          },
-          {
-            id: '3',
-            userId: 'user3',
-            userName: '鈴木一郎',
-            images: [
-              'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?w=800',
-            ],
-            title: 'モダンな1DK',
-            description: '白を基調としたモダンなインテリアです。',
-            tags: ['モダン', 'ホワイト', '1DK'],
-            likes: 156,
-            liked: false,
-            comments: [],
-            createdAt: new Date(Date.now() - 10800000).toISOString(),
-          },
-        ]
-        samplePosts.forEach((post) => useStore.getState().addPost(post as any))
+      } else {
+        // フォローリストがない場合は空配列で初期化
+        setFollowing([])
       }
     }
   }, [user, setFollowing])
 
-  // 피드 타입에 따라 게시물 필터링
-  const filteredPosts =
-    feedType === 'following' && user
-      ? posts.filter(
-          (post) =>
-            following.includes(post.userId) || post.userId === user.id
-        )
-      : posts
+  useEffect(() => {
+    // サンプルデータ（開発用）
+    if (typeof window !== 'undefined' && posts.length === 0) {
+      const samplePosts = [
+        {
+          id: '1',
+          userId: 'user1',
+          userName: '田中太郎',
+          images: [
+            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+          ],
+          title: 'シンプルなワンルーム',
+          description: 'ミニマルなインテリアで快適な空間を作りました。',
+          tags: ['ミニマル', 'ワンルーム', 'DIY'],
+          likes: 42,
+          liked: false,
+          comments: [],
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+        },
+        {
+          id: '2',
+          userId: 'user2',
+          userName: '佐藤花子',
+          images: [
+            'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
+          ],
+          title: 'ナチュラルな1K',
+          description: '観葉植物をたくさん置いて、自然を感じられる空間に。',
+          tags: ['ナチュラル', 'グリーン', '1K'],
+          likes: 89,
+          liked: false,
+          comments: [],
+          createdAt: new Date(Date.now() - 7200000).toISOString(),
+        },
+        {
+          id: '3',
+          userId: 'user3',
+          userName: '鈴木一郎',
+          images: [
+            'https://images.unsplash.com/photo-1556912172-45b7abe8b7e1?w=800',
+          ],
+          title: 'モダンな1DK',
+          description: '白を基調としたモダンなインテリアです。',
+          tags: ['モダン', 'ホワイト', '1DK'],
+          likes: 156,
+          liked: false,
+          comments: [],
+          createdAt: new Date(Date.now() - 10800000).toISOString(),
+        },
+      ]
+      samplePosts.forEach((post) => useStore.getState().addPost(post as any))
+    }
+  }, [posts.length])
+
+  // フィードタイプに応じて投稿をフィルタリング
+  const filteredPosts = useMemo(() => {
+    if (feedType === 'following') {
+      // フォローフィードの場合
+      if (!user || !user.id) {
+        // ログインしていない場合は空配列を返す
+        return []
+      }
+      // followingが配列でないか空の場合は空配列を返す
+      if (!Array.isArray(following) || following.length === 0) {
+        return []
+      }
+      // Setを使用して高速かつ正確な検索を実現
+      // すべてのIDを文字列に正規化してSetに格納
+      const followingSet = new Set(
+        following
+          .filter((id) => id != null && id !== '')
+          .map((id) => String(id).trim())
+      )
+      
+      // フォローしたユーザーの投稿のみをフィルタリング
+      return posts.filter((post) => {
+        // post.userIdが存在しない場合は除外
+        if (!post.userId || post.userId === '') {
+          return false
+        }
+        // userIdを文字列に正規化してSetで検索
+        const normalizedUserId = String(post.userId).trim()
+        // Setに存在する場合のみtrueを返す
+        return followingSet.has(normalizedUserId)
+      })
+    }
+    return posts
+  }, [feedType, user, posts, following])
 
   return (
     <div className="min-h-screen bg-primary-gray">
       <Header />
       <main>
-        {/* 소개글 섹션 */}
+        {/* 紹介セクション */}
         <section className="relative bg-white border-b border-primary-gray min-h-screen flex items-center pt-20 overflow-hidden">
-          {/* 배경 이미지 */}
+          {/* 背景画像 */}
           <motion.div 
             className="absolute inset-0 z-0"
             initial={{ opacity: 0, scale: 1.1 }}
@@ -132,12 +168,12 @@ export default function Home() {
             />
           </motion.div>
           
-          {/* 오버레이 (텍스트 가독성 향상) */}
+          {/* オーバーレイ（テキストの可読性向上） */}
           <div className="absolute inset-0 bg-black/10 z-[1]" />
           
         </section>
 
-        {/* 팔로우 피드 섹션 */}
+        {/* フォローフィードセクション */}
         <section id="feed" className="py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div 
@@ -149,6 +185,7 @@ export default function Home() {
             >
               <div className="flex items-center justify-between mb-4">
                 <motion.div
+                  className="flex-1"
                   initial={{ opacity: 0, x: -30 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: false, margin: "-100px" }}
@@ -163,36 +200,46 @@ export default function Home() {
                       : 'みんなの部屋のインテリアを見てみましょう'}
                   </p>
                 </motion.div>
-                {user && (
-                  <motion.div 
-                    className="flex gap-2 bg-white rounded-lg p-1 shadow-sm"
-                    initial={{ opacity: 0, x: 30 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: false, margin: "-100px" }}
-                    transition={{ duration: scrollDirection === 'down' ? 0.6 : 0, delay: scrollDirection === 'down' ? 0.3 : 0, ease: "easeOut" }}
+                <motion.div 
+                  className="flex gap-2 bg-white rounded-lg p-1 shadow-sm ml-4"
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: false, margin: "-100px" }}
+                  transition={{ duration: scrollDirection === 'down' ? 0.6 : 0, delay: scrollDirection === 'down' ? 0.3 : 0, ease: "easeOut" }}
+                >
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        window.location.href = '/auth/login'
+                        return
+                      }
+                      setFeedType('all')
+                    }}
+                    className={`px-4 py-2 rounded-md font-semibold transition-colors whitespace-nowrap text-center ${
+                      feedType === 'all'
+                        ? 'bg-primary-blue text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
                   >
-                    <button
-                      onClick={() => setFeedType('all')}
-                      className={`px-4 py-2 rounded-md font-semibold transition-colors whitespace-nowrap text-center ${
-                        feedType === 'all'
-                          ? 'bg-primary-blue text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      すべて
-                    </button>
-                    <button
-                      onClick={() => setFeedType('following')}
-                      className={`px-4 py-2 rounded-md font-semibold transition-colors whitespace-nowrap text-center ${
-                        feedType === 'following'
-                          ? 'bg-primary-blue text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      フォロー
-                    </button>
-                  </motion.div>
-                )}
+                    すべて
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        window.location.href = '/auth/login'
+                        return
+                      }
+                      setFeedType('following')
+                    }}
+                    className={`px-4 py-2 rounded-md font-semibold transition-colors whitespace-nowrap text-center ${
+                      feedType === 'following'
+                        ? 'bg-primary-blue text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    フォロー
+                  </button>
+                </motion.div>
               </div>
             </motion.div>
 
@@ -206,22 +253,28 @@ export default function Home() {
               >
                 <p className="text-gray-500 mb-4">
                   {feedType === 'following'
-                    ? '팔로우한 사용자의 게시물이 없습니다'
+                    ? 'フォロー中のユーザーの投稿がありません'
                     : 'まだ投稿がありません'}
                 </p>
                 {feedType === 'following' && following.length === 0 && (
-                  <p className="text-gray-400 mb-4 text-sm">
-                    프로필을 방문하여 사용자를 팔로우해보세요
-                  </p>
+                  <>
+                    <p className="text-gray-400 mb-4 text-sm">
+                      プロフィールを訪問してユーザーをフォローしてみましょう
+                    </p>
+                    <button
+                      onClick={() => setFeedType('all')}
+                      className="inline-block px-6 py-3 bg-primary-blue text-white rounded-lg hover:bg-opacity-90"
+                    >
+                      他のユーザーの投稿を見る
+                    </button>
+                  </>
                 )}
-                {user && (
+                {user && feedType !== 'following' && (
                   <a
                     href="/post/create"
                     className="inline-block px-6 py-3 bg-primary-blue text-white rounded-lg hover:bg-opacity-90"
                   >
-                    {feedType === 'following'
-                      ? '게시물 작성하기'
-                      : '最初の投稿を作成'}
+                    最初の投稿を作成
                   </a>
                 )}
               </motion.div>
@@ -248,6 +301,12 @@ export default function Home() {
                     <PostCard post={post} />
                   </motion.div>
                 ))}
+                {/* 投稿が4つ未満の場合でもカードサイズを維持するための空白スペース */}
+                {feedType === 'following' &&
+                  filteredPosts.length < 4 &&
+                  Array.from({ length: 4 - filteredPosts.length }).map((_, index) => (
+                    <div key={`empty-${index}`} className="hidden xl:block" aria-hidden="true" />
+                  ))}
               </motion.div>
             )}
           </div>
