@@ -1,29 +1,74 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { X, Plus, Tag } from 'lucide-react'
 import Header from '@/components/Header'
 import { useStore } from '@/store/useStore'
 
-export default function CreatePostPage() {
+export default function EditPostPage() {
   const router = useRouter()
-  const { user, addPost } = useStore()
+  const params = useParams()
+  const postId = params.id as string
+  const { user, posts, updatePost } = useStore()
   const [images, setImages] = useState<string[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [isPublic, setIsPublic] = useState(true)
+  const [loading, setLoading] = useState(true)
+
+  const post = posts.find((p) => p.id === postId)
 
   useEffect(() => {
     if (!user) {
       router.push('/auth/login')
+      return
     }
-  }, [user, router])
 
-  if (!user) {
+    if (post) {
+      // 投稿が存在する場合、所有者を確認
+      if (post.userId !== user.id) {
+        alert('この投稿を編集する権限がありません')
+        router.push(`/post/${postId}`)
+        return
+      }
+
+      // 既存の投稿データを読み込む
+      setImages(post.images || [])
+      setTitle(post.title || '')
+      setDescription(post.description || '')
+      setTags(post.tags || [])
+      setLoading(false)
+    } else {
+      setLoading(false)
+    }
+  }, [user, post, postId, router])
+
+  if (!user || loading) {
     return null
+  }
+
+  if (!post) {
+    return (
+      <div className="min-h-screen bg-primary-gray">
+        <Header />
+        <main className="pt-20 pb-8">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-white rounded-lg shadow-sm p-12 text-center mt-8">
+              <p className="text-gray-500 mb-4">投稿が見つかりません</p>
+              <button
+                onClick={() => router.push('/feed')}
+                className="px-6 py-3 bg-primary-blue text-white rounded-lg hover:bg-opacity-90"
+              >
+                フィードに戻る
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,23 +120,15 @@ export default function CreatePostPage() {
       return
     }
 
-    const newPost = {
-      id: Date.now().toString(),
-      userId: user.id,
-      userName: user.name,
-      userAvatar: user.avatar,
+    // 投稿を更新
+    updatePost(postId, {
       images,
       title,
       description,
       tags,
-      likes: 0,
-      liked: false,
-      comments: [],
-      createdAt: new Date().toISOString(),
-    }
+    })
 
-    addPost(newPost)
-    router.push(`/post/${newPost.id}`)
+    router.push(`/post/${postId}`)
   }
 
   return (
@@ -100,7 +137,7 @@ export default function CreatePostPage() {
       <main className="pt-20 pb-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow-sm p-8 mt-8">
-            <h1 className="text-3xl font-bold mb-8">新しい投稿</h1>
+            <h1 className="text-3xl font-bold mb-8">投稿を編集</h1>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* 画像アップロード */}
@@ -231,7 +268,7 @@ export default function CreatePostPage() {
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
-                  onClick={() => router.back()}
+                  onClick={() => router.push(`/post/${postId}`)}
                   className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
                   キャンセル
@@ -240,7 +277,7 @@ export default function CreatePostPage() {
                   type="submit"
                   className="flex-1 bg-primary-blue text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
                 >
-                  投稿する
+                  更新する
                 </button>
               </div>
             </form>

@@ -42,6 +42,7 @@ interface AppState {
   setUser: (user: User | null) => void
   addPost: (post: Post) => void
   updatePost: (postId: string, updates: Partial<Post>) => void
+  deletePost: (postId: string) => void
   toggleLike: (postId: string) => void
   addComment: (postId: string, comment: Comment) => void
   updateComment: (postId: string, commentId: string, content: string) => void
@@ -75,6 +76,10 @@ export const useStore = create<AppState>((set, get) => ({
       posts: state.posts.map((post) =>
         post.id === postId ? { ...post, ...updates } : post
       ),
+    })),
+  deletePost: (postId) =>
+    set((state) => ({
+      posts: state.posts.filter((post) => post.id !== postId),
     })),
   toggleLike: (postId) =>
     set((state) => ({

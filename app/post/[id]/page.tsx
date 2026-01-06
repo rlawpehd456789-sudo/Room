@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Heart, MessageCircle, ArrowLeft, ArrowRight, Tag, Edit, Trash2, Check, X } from 'lucide-react'
+import { Heart, MessageCircle, ArrowLeft, ArrowRight, Tag, Edit, Trash2, Check, X, MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import { useStore } from '@/store/useStore'
@@ -13,11 +13,12 @@ export default function PostDetailPage() {
   const params = useParams()
   const router = useRouter()
   const postId = params.id as string
-  const { posts, user, toggleLike, addComment, updateComment, deleteComment, setFollowing, followUser, unfollowUser, isFollowing } = useStore()
+  const { posts, user, toggleLike, addComment, updateComment, deleteComment, setFollowing, followUser, unfollowUser, isFollowing, deletePost } = useStore()
   const [commentText, setCommentText] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editCommentText, setEditCommentText] = useState('')
+  const [showMenu, setShowMenu] = useState(false)
 
   const post = posts.find((p) => p.id === postId)
 
@@ -106,6 +107,36 @@ export default function PostDetailPage() {
       deleteComment(post.id, commentId)
     }
   }
+
+  const handleEditPost = () => {
+    setShowMenu(false)
+    router.push(`/post/${post.id}/edit`)
+  }
+
+  const handleDeletePost = () => {
+    setShowMenu(false)
+    if (confirm('この投稿を削除しますか？')) {
+      deletePost(post.id)
+      router.push('/feed')
+    }
+  }
+
+  // メニュー外をクリックしたときにメニューを閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.post-menu-container')) {
+        setShowMenu(false)
+      }
+    }
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showMenu])
 
   return (
     <div className="min-h-screen bg-primary-gray">
@@ -206,25 +237,64 @@ export default function PostDetailPage() {
                         </p>
                       </div>
                     </Link>
-                    {user && user.id !== post.userId && (
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          if (isFollowing(post.userId)) {
-                            unfollowUser(post.userId)
-                          } else {
-                            followUser(post.userId)
-                          }
-                        }}
-                        className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
-                          isFollowing(post.userId)
-                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            : 'bg-primary-blue text-white hover:bg-opacity-90'
-                        }`}
-                      >
-                        {isFollowing(post.userId) ? 'フォロー中' : 'フォロー'}
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {user && user.id === post.userId && (
+                        <div className="relative post-menu-container">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              setShowMenu(!showMenu)
+                            }}
+                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                          >
+                            <MoreHorizontal size={20} className="text-gray-600" />
+                          </button>
+                          {showMenu && (
+                            <div className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10 min-w-[120px]">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  handleEditPost()
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                              >
+                                <Edit size={16} />
+                                編集
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  handleDeletePost()
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+                              >
+                                <Trash2 size={16} />
+                                削除
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {user && user.id !== post.userId && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            if (isFollowing(post.userId)) {
+                              unfollowUser(post.userId)
+                            } else {
+                              followUser(post.userId)
+                            }
+                          }}
+                          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                            isFollowing(post.userId)
+                              ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              : 'bg-primary-blue text-white hover:bg-opacity-90'
+                          }`}
+                        >
+                          {isFollowing(post.userId) ? 'フォロー中' : 'フォロー'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
