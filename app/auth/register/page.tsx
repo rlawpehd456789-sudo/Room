@@ -183,7 +183,7 @@ export default function RegisterPage() {
     // 사용자 목록에 추가
     addUserToStorage(user)
     setUser(user)
-    router.push('/feed')
+    router.push('/')
   }
 
   // 이메일이 변경되면 중복확인 상태 초기화

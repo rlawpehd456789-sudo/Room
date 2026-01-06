@@ -26,12 +26,12 @@ export default function Header() {
     {
       name: "MYFEED",
       type: "description" as const,
-      onClick: user ? () => router.push(`/profile/${user.id}`) : undefined,
+      onClick: user ? () => router.push(`/profile/${user.id}`) : () => router.push('/auth/login'),
     },
     {
       name: "FOLLOWER",
       type: "description" as const,
-      onClick: () => router.push('/feed'),
+      onClick: user ? () => router.push('/feed') : () => router.push('/auth/login'),
     },
   ]
 

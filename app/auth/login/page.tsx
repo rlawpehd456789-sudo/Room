@@ -31,7 +31,7 @@ export default function LoginPage() {
     }
 
     setUser(user)
-    router.push('/feed')
+    router.push('/')
   }
 
   return (
