@@ -5,6 +5,7 @@ import { Heart, MessageCircle, MoreHorizontal } from 'lucide-react'
 import { Post } from '@/store/useStore'
 import { useStore } from '@/store/useStore'
 import { formatDistanceToNow } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 interface PostCardProps {
   post: Post
@@ -63,6 +64,7 @@ export default function PostCard({ post }: PostCardProps) {
                 <p className="text-xs text-gray-500">
                   {formatDistanceToNow(new Date(post.createdAt), {
                     addSuffix: true,
+                    locale: ja,
                   })}
                 </p>
               </div>

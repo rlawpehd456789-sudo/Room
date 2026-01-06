@@ -2,19 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Heart, MessageCircle, ArrowLeft, Tag } from 'lucide-react'
+import { Heart, MessageCircle, ArrowLeft, ArrowRight, Tag, Edit, Trash2, Check, X } from 'lucide-react'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import { useStore } from '@/store/useStore'
 import { formatDistanceToNow } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 export default function PostDetailPage() {
   const params = useParams()
   const router = useRouter()
   const postId = params.id as string
-  const { posts, user, toggleLike, addComment, setFollowing } = useStore()
+  const { posts, user, toggleLike, addComment, updateComment, deleteComment, setFollowing, followUser, unfollowUser, isFollowing } = useStore()
   const [commentText, setCommentText] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editCommentText, setEditCommentText] = useState('')
 
   const post = posts.find((p) => p.id === postId)
 
@@ -79,6 +82,29 @@ export default function PostDetailPage() {
 
     addComment(post.id, newComment)
     setCommentText('')
+  }
+
+  const handleEditComment = (commentId: string, currentContent: string) => {
+    setEditingCommentId(commentId)
+    setEditCommentText(currentContent)
+  }
+
+  const handleSaveEdit = (commentId: string) => {
+    if (!editCommentText.trim()) return
+    updateComment(post.id, commentId, editCommentText.trim())
+    setEditingCommentId(null)
+    setEditCommentText('')
+  }
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null)
+    setEditCommentText('')
+  }
+
+  const handleDeleteComment = (commentId: string) => {
+    if (confirm('このコメントを削除しますか？')) {
+      deleteComment(post.id, commentId)
+    }
   }
 
   return (
@@ -152,32 +178,54 @@ export default function PostDetailPage() {
               <div className="flex flex-col">
                 {/* ユーザー情報 */}
                 <div className="p-6 border-b border-primary-gray">
-                  <Link
-                    href={`/profile/${post.userId}`}
-                    className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                  >
-                    {post.userAvatar ? (
-                      <img
-                        src={post.userAvatar}
-                        alt={post.userName}
-                        width={48}
-                        height={48}
-                        className="rounded-full w-12 h-12 object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-primary-blue flex items-center justify-center text-white text-xl">
-                        {post.userName.charAt(0)}
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={`/profile/${post.userId}`}
+                      className="flex items-center gap-3 hover:opacity-80 transition-opacity flex-1"
+                    >
+                      {post.userAvatar ? (
+                        <img
+                          src={post.userAvatar}
+                          alt={post.userName}
+                          width={48}
+                          height={48}
+                          className="rounded-full w-12 h-12 object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-primary-blue flex items-center justify-center text-white text-xl">
+                          {post.userName.charAt(0)}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold">{post.userName}</p>
+                        <p className="text-sm text-gray-500">
+                          {formatDistanceToNow(new Date(post.createdAt), {
+                            addSuffix: true,
+                            locale: ja,
+                          })}
+                        </p>
                       </div>
+                    </Link>
+                    {user && user.id !== post.userId && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          if (isFollowing(post.userId)) {
+                            unfollowUser(post.userId)
+                          } else {
+                            followUser(post.userId)
+                          }
+                        }}
+                        className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                          isFollowing(post.userId)
+                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            : 'bg-primary-blue text-white hover:bg-opacity-90'
+                        }`}
+                      >
+                        {isFollowing(post.userId) ? 'フォロー中' : 'フォロー'}
+                      </button>
                     )}
-                    <div>
-                      <p className="font-semibold">{post.userName}</p>
-                      <p className="text-sm text-gray-500">
-                        {formatDistanceToNow(new Date(post.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </p>
-                    </div>
-                  </Link>
+                  </div>
                 </div>
 
                 {/* 投稿内容 */}
@@ -258,9 +306,9 @@ export default function PostDetailPage() {
                             <button
                               type="submit"
                               disabled={!commentText.trim()}
-                              className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="px-3 py-2 bg-primary-blue text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                             >
-                              送信
+                              <ArrowRight size={28} />
                             </button>
                           </div>
                         </div>
@@ -293,13 +341,72 @@ export default function PostDetailPage() {
                               <div className="bg-primary-gray rounded-lg p-3">
                                 <div className="flex items-center justify-between mb-1">
                                   <p className="font-semibold text-sm">{comment.userName}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {formatDistanceToNow(new Date(comment.createdAt), {
-                                      addSuffix: true,
-                                    })}
-                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
+                                      <p className="text-xs text-gray-500">
+                                        {formatDistanceToNow(new Date(comment.createdAt), {
+                                          addSuffix: true,
+                                          locale: ja,
+                                        })}
+                                      </p>
+                                      {comment.edited && (
+                                        <span className="text-xs text-gray-400">
+                                          (編集済み)
+                                        </span>
+                                      )}
+                                    </div>
+                                    {user && user.id === comment.userId && (
+                                      <div className="flex items-center gap-1">
+                                        {editingCommentId === comment.id ? (
+                                          <>
+                                            <button
+                                              onClick={() => handleSaveEdit(comment.id)}
+                                              className="p-1 text-green-600 hover:text-green-700 transition-colors"
+                                              title="保存"
+                                            >
+                                              <Check size={16} />
+                                            </button>
+                                            <button
+                                              onClick={handleCancelEdit}
+                                              className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                                              title="キャンセル"
+                                            >
+                                              <X size={16} />
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <button
+                                              onClick={() => handleEditComment(comment.id, comment.content)}
+                                              className="p-1 text-gray-500 hover:text-primary-blue transition-colors"
+                                              title="編集"
+                                            >
+                                              <Edit size={16} />
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteComment(comment.id)}
+                                              className="p-1 text-gray-500 hover:text-red-500 transition-colors"
+                                              title="削除"
+                                            >
+                                              <Trash2 size={16} />
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                                <p className="text-gray-700">{comment.content}</p>
+                                {editingCommentId === comment.id ? (
+                                  <input
+                                    type="text"
+                                    value={editCommentText}
+                                    onChange={(e) => setEditCommentText(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent text-sm"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <p className="text-gray-700">{comment.content}</p>
+                                )}
                               </div>
                             </div>
                           </div>

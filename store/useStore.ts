@@ -31,6 +31,8 @@ export interface Comment {
   userAvatar?: string
   content: string
   createdAt: string
+  edited?: boolean
+  updatedAt?: string
 }
 
 interface AppState {
@@ -42,6 +44,8 @@ interface AppState {
   updatePost: (postId: string, updates: Partial<Post>) => void
   toggleLike: (postId: string) => void
   addComment: (postId: string, comment: Comment) => void
+  updateComment: (postId: string, commentId: string, content: string) => void
+  deleteComment: (postId: string, commentId: string) => void
   followUser: (userId: string) => void
   unfollowUser: (userId: string) => void
   isFollowing: (userId: string) => boolean
@@ -89,6 +93,32 @@ export const useStore = create<AppState>((set, get) => ({
       posts: state.posts.map((post) =>
         post.id === postId
           ? { ...post, comments: [...post.comments, comment] }
+          : post
+      ),
+    })),
+  updateComment: (postId, commentId, content) =>
+    set((state) => ({
+      posts: state.posts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: post.comments.map((comment) =>
+                comment.id === commentId
+                  ? { ...comment, content, edited: true, updatedAt: new Date().toISOString() }
+                  : comment
+              ),
+            }
+          : post
+      ),
+    })),
+  deleteComment: (postId, commentId) =>
+    set((state) => ({
+      posts: state.posts.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              comments: post.comments.filter((comment) => comment.id !== commentId),
+            }
           : post
       ),
     })),
