@@ -13,14 +13,82 @@ export default function PostDetailPage() {
   const params = useParams()
   const router = useRouter()
   const postId = params.id as string
-  const { posts, user, toggleLike, addComment, updateComment, deleteComment, setFollowing, followUser, unfollowUser, isFollowing, deletePost } = useStore()
+  const { posts, user, toggleLike, addComment, updateComment, deleteComment, setFollowing, followUser, unfollowUser, isFollowing, deletePost, addNotification } = useStore()
   const [commentText, setCommentText] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editCommentText, setEditCommentText] = useState('')
   const [showMenu, setShowMenu] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState('')
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false)
+  const [mentionPosition, setMentionPosition] = useState(0)
+  const [editMentionQuery, setEditMentionQuery] = useState('')
+  const [showEditMentionDropdown, setShowEditMentionDropdown] = useState(false)
+  const [editMentionPosition, setEditMentionPosition] = useState(0)
 
   const post = posts.find((p) => p.id === postId)
+
+  // 멘션 가능한 사용자 목록 추출 (게시글 작성자 + 모든 코멘트 작성자)
+  const availableUsers = post
+    ? Array.from(
+        new Map([
+          [post.userId, { id: post.userId, name: post.userName, avatar: post.userAvatar }],
+          ...post.comments.map((c) => [c.userId, { id: c.userId, name: c.userName, avatar: c.userAvatar }]),
+        ]).values()
+      ).filter((u) => u.id !== user?.id) // 현재 사용자 제외
+    : []
+
+  // 모든 게시글에서 사용자 정보를 수집 (멘션 파싱용)
+  const allUsersMap = new Map<string, { id: string; name: string; avatar?: string }>()
+  posts.forEach((p) => {
+    if (!allUsersMap.has(p.userId)) {
+      allUsersMap.set(p.userId, { id: p.userId, name: p.userName, avatar: p.userAvatar })
+    }
+    p.comments.forEach((c) => {
+      if (!allUsersMap.has(c.userId)) {
+        allUsersMap.set(c.userId, { id: c.userId, name: c.userName, avatar: c.userAvatar })
+      }
+    })
+  })
+  const allUsers = Array.from(allUsersMap.values())
+
+  // 멘션 필터링된 사용자 목록
+  const filteredMentionUsers = availableUsers.filter((u) =>
+    u.name.toLowerCase().includes(mentionQuery.toLowerCase())
+  )
+  const filteredEditMentionUsers = availableUsers.filter((u) =>
+    u.name.toLowerCase().includes(editMentionQuery.toLowerCase())
+  )
+
+  // 멘션된 사용자를 파싱하여 표시하는 함수
+  const parseMentions = (text: string) => {
+    // 한글, 영문, 숫자, 언더스코어를 포함한 닉네임 지원
+    const mentionRegex = /@([가-힣a-zA-Z0-9_]+)/g
+    const parts: Array<{ type: 'text' | 'mention'; content: string; userId?: string }> = []
+    let lastIndex = 0
+    let match
+
+    while ((match = mentionRegex.exec(text)) !== null) {
+      // 멘션 전의 텍스트
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', content: text.slice(lastIndex, match.index) })
+      }
+      // 멘션된 사용자 찾기 (모든 게시글의 사용자 중에서 검색)
+      const mentionedName = match[1]
+      const mentionedUser = allUsers.find((u) => u.name === mentionedName)
+      parts.push({
+        type: 'mention',
+        content: `@${mentionedName}`,
+        userId: mentionedUser?.id,
+      })
+      lastIndex = mentionRegex.lastIndex
+    }
+    // 남은 텍스트
+    if (lastIndex < text.length) {
+      parts.push({ type: 'text', content: text.slice(lastIndex) })
+    }
+    return parts.length > 0 ? parts : [{ type: 'text', content: text }]
+  }
 
   useEffect(() => {
     // ローカルストレージからユーザー情報を読み込む
@@ -68,9 +136,75 @@ export default function PostDetailPage() {
     }
   }
 
+  const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setCommentText(value)
+
+    // @ 입력 감지
+    const cursorPosition = e.target.selectionStart || 0
+    const textBeforeCursor = value.slice(0, cursorPosition)
+    
+    // @ 패턴 찾기 (가장 가까운 것, 공백이나 줄바꿈 뒤에 @가 오는 경우)
+    // 한글, 영문, 숫자, 언더스코어를 포함한 닉네임 지원
+    const mentionPattern = /(?:^|\s)@([가-힣a-zA-Z0-9_]*)$/
+    const match = textBeforeCursor.match(mentionPattern)
+
+    if (match) {
+      const query = match[1] || ''
+      const mentionStart = textBeforeCursor.lastIndexOf('@')
+      
+      if (mentionStart !== -1) {
+        setMentionQuery(query)
+        setMentionPosition(mentionStart)
+        setShowMentionDropdown(true)
+      } else {
+        setShowMentionDropdown(false)
+      }
+    } else {
+      setShowMentionDropdown(false)
+    }
+  }
+
+  const handleMentionSelect = (userName: string) => {
+    const textBeforeMention = commentText.slice(0, mentionPosition)
+    const textAfterMention = commentText.slice(mentionPosition + 1 + mentionQuery.length)
+    const newText = `${textBeforeMention}@${userName} ${textAfterMention}`
+    setCommentText(newText)
+    setShowMentionDropdown(false)
+    setMentionQuery('')
+    
+    // 입력 필드에 포커스 유지 및 커서 위치 조정
+    setTimeout(() => {
+      const input = document.querySelector('input[type="text"]') as HTMLInputElement
+      if (input) {
+        const newCursorPosition = mentionPosition + 1 + userName.length + 1 // @닉네임 + 공백
+        input.focus()
+        input.setSelectionRange(newCursorPosition, newCursorPosition)
+      }
+    }, 0)
+  }
+
+  // 멘션된 사용자 ID 목록 추출
+  const extractMentionedUserIds = (text: string): string[] => {
+    const mentionRegex = /@([가-힣a-zA-Z0-9_]+)/g
+    const mentionedUserIds: string[] = []
+    let match
+
+    while ((match = mentionRegex.exec(text)) !== null) {
+      const mentionedName = match[1]
+      const mentionedUser = allUsers.find((u) => u.name === mentionedName)
+      if (mentionedUser && mentionedUser.id !== user?.id) {
+        mentionedUserIds.push(mentionedUser.id)
+      }
+    }
+
+    // 중복 제거
+    return Array.from(new Set(mentionedUserIds))
+  }
+
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!commentText.trim() || !user) return
+    if (!commentText.trim() || !user || !post) return
 
     const newComment = {
       id: Date.now().toString(),
@@ -82,24 +216,127 @@ export default function PostDetailPage() {
     }
 
     addComment(post.id, newComment)
+
+    // 멘션된 사용자들에게 알림 생성
+    const mentionedUserIds = extractMentionedUserIds(commentText)
+    mentionedUserIds.forEach((mentionedUserId) => {
+      const mentionedUser = allUsers.find((u) => u.id === mentionedUserId)
+      if (mentionedUser) {
+        addNotification({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          userId: mentionedUserId,
+          type: 'mention',
+          fromUserId: user.id,
+          fromUserName: user.name,
+          fromUserAvatar: user.avatar,
+          postId: post.id,
+          commentId: newComment.id,
+          content: commentText.trim(),
+          read: false,
+          createdAt: new Date().toISOString(),
+        })
+      }
+    })
+
     setCommentText('')
+    setShowMentionDropdown(false)
+    setMentionQuery('')
   }
 
   const handleEditComment = (commentId: string, currentContent: string) => {
     setEditingCommentId(commentId)
     setEditCommentText(currentContent)
+    setShowEditMentionDropdown(false)
+    setEditMentionQuery('')
+  }
+
+  const handleEditCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setEditCommentText(value)
+
+    // @ 입력 감지
+    const cursorPosition = e.target.selectionStart || 0
+    const textBeforeCursor = value.slice(0, cursorPosition)
+    
+    // @ 패턴 찾기 (가장 가까운 것, 공백이나 줄바꿈 뒤에 @가 오는 경우)
+    // 한글, 영문, 숫자, 언더스코어를 포함한 닉네임 지원
+    const mentionPattern = /(?:^|\s)@([가-힣a-zA-Z0-9_]*)$/
+    const match = textBeforeCursor.match(mentionPattern)
+
+    if (match) {
+      const query = match[1] || ''
+      const mentionStart = textBeforeCursor.lastIndexOf('@')
+      
+      if (mentionStart !== -1) {
+        setEditMentionQuery(query)
+        setEditMentionPosition(mentionStart)
+        setShowEditMentionDropdown(true)
+      } else {
+        setShowEditMentionDropdown(false)
+      }
+    } else {
+      setShowEditMentionDropdown(false)
+    }
+  }
+
+  const handleEditMentionSelect = (userName: string) => {
+    const textBeforeMention = editCommentText.slice(0, editMentionPosition)
+    const textAfterMention = editCommentText.slice(editMentionPosition + 1 + editMentionQuery.length)
+    const newText = `${textBeforeMention}@${userName} ${textAfterMention}`
+    setEditCommentText(newText)
+    setShowEditMentionDropdown(false)
+    setEditMentionQuery('')
+    
+    // 입력 필드에 포커스 유지 및 커서 위치 조정
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('input[type="text"]')
+      const editInput = Array.from(inputs).find((input) => 
+        (input as HTMLInputElement).value === newText
+      ) as HTMLInputElement
+      if (editInput) {
+        const newCursorPosition = editMentionPosition + 1 + userName.length + 1 // @닉네임 + 공백
+        editInput.focus()
+        editInput.setSelectionRange(newCursorPosition, newCursorPosition)
+      }
+    }, 0)
   }
 
   const handleSaveEdit = (commentId: string) => {
-    if (!editCommentText.trim()) return
+    if (!editCommentText.trim() || !post) return
     updateComment(post.id, commentId, editCommentText.trim())
+
+    // 수정된 댓글에 멘션된 사용자들에게 알림 생성
+    const mentionedUserIds = extractMentionedUserIds(editCommentText)
+    mentionedUserIds.forEach((mentionedUserId) => {
+      const mentionedUser = allUsers.find((u) => u.id === mentionedUserId)
+      if (mentionedUser && user) {
+        addNotification({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          userId: mentionedUserId,
+          type: 'mention',
+          fromUserId: user.id,
+          fromUserName: user.name,
+          fromUserAvatar: user.avatar,
+          postId: post.id,
+          commentId: commentId,
+          content: editCommentText.trim(),
+          read: false,
+          createdAt: new Date().toISOString(),
+        })
+      }
+    })
+
     setEditingCommentId(null)
     setEditCommentText('')
+    setShowEditMentionDropdown(false)
+    setEditMentionQuery('')
   }
 
   const handleCancelEdit = () => {
     setEditingCommentId(null)
     setEditCommentText('')
+    setShowEditMentionDropdown(false)
+    setEditMentionQuery('')
   }
 
   const handleDeleteComment = (commentId: string) => {
@@ -128,15 +365,22 @@ export default function PostDetailPage() {
       if (!target.closest('.post-menu-container')) {
         setShowMenu(false)
       }
+      // 멘션 드롭다운 외부 클릭 감지
+      if (!target.closest('.mention-dropdown-container')) {
+        setShowMentionDropdown(false)
+      }
+      if (!target.closest('.edit-mention-dropdown-container')) {
+        setShowEditMentionDropdown(false)
+      }
     }
 
-    if (showMenu) {
+    if (showMenu || showMentionDropdown || showEditMentionDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => {
         document.removeEventListener('mousedown', handleClickOutside)
       }
     }
-  }, [showMenu])
+  }, [showMenu, showMentionDropdown, showEditMentionDropdown])
 
   return (
     <div className="min-h-screen bg-primary-gray">
@@ -366,14 +610,71 @@ export default function PostDetailPage() {
                               {user.name.charAt(0)}
                             </div>
                           )}
-                          <div className="flex-1 flex gap-2">
+                          <div className="flex-1 flex gap-2 relative mention-dropdown-container">
                             <input
                               type="text"
                               value={commentText}
-                              onChange={(e) => setCommentText(e.target.value)}
-                              placeholder="コメントを入力..."
+                              onChange={handleCommentChange}
+                              onKeyDown={(e) => {
+                                if (showMentionDropdown) {
+                                  if (e.key === 'ArrowDown') {
+                                    e.preventDefault()
+                                  } else if (e.key === 'Enter' && filteredMentionUsers.length > 0) {
+                                    e.preventDefault()
+                                    handleMentionSelect(filteredMentionUsers[0].name)
+                                    return
+                                  } else if (e.key === 'Escape') {
+                                    e.preventDefault()
+                                    setShowMentionDropdown(false)
+                                    return
+                                  }
+                                }
+                                // Enter 키가 멘션 선택에 사용되지 않은 경우에만 폼 제출
+                                if (e.key === 'Enter' && !showMentionDropdown) {
+                                  // 폼 제출은 기본 동작 사용
+                                }
+                              }}
+                              onBlur={() => {
+                                // 드롭다운 클릭 시에는 닫히지 않도록 약간의 지연 추가
+                                setTimeout(() => setShowMentionDropdown(false), 200)
+                              }}
+                              placeholder="コメントを入力... @닉네임으로 멘션"
                               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                             />
+                            {showMentionDropdown && availableUsers.length > 0 && (
+                              <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                                {filteredMentionUsers.length > 0 ? (
+                                  filteredMentionUsers.map((u) => (
+                                    <button
+                                      key={u.id}
+                                      type="button"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault() // onBlur 이벤트 방지
+                                        handleMentionSelect(u.name)
+                                      }}
+                                      className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                    >
+                                      {u.avatar ? (
+                                        <img
+                                          src={u.avatar}
+                                          alt={u.name}
+                                          className="w-8 h-8 rounded-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-8 h-8 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm">
+                                          {u.name.charAt(0)}
+                                        </div>
+                                      )}
+                                      <span className="font-semibold">{u.name}</span>
+                                    </button>
+                                  ))
+                                ) : (
+                                  <div className="px-4 py-2 text-gray-500 text-sm">
+                                    사용자를 찾을 수 없습니다
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             <button
                               type="submit"
                               disabled={!commentText.trim()}
@@ -468,15 +769,83 @@ export default function PostDetailPage() {
                                   </div>
                                 </div>
                                 {editingCommentId === comment.id ? (
-                                  <input
-                                    type="text"
-                                    value={editCommentText}
-                                    onChange={(e) => setEditCommentText(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent text-sm"
-                                    autoFocus
-                                  />
+                                  <div className="relative edit-mention-dropdown-container">
+                                    <input
+                                      type="text"
+                                      value={editCommentText}
+                                      onChange={handleEditCommentChange}
+                                      onKeyDown={(e) => {
+                                        if (showEditMentionDropdown) {
+                                          if (e.key === 'ArrowDown') {
+                                            e.preventDefault()
+                                          } else if (e.key === 'Enter' && filteredEditMentionUsers.length > 0) {
+                                            e.preventDefault()
+                                            handleEditMentionSelect(filteredEditMentionUsers[0].name)
+                                            return
+                                          } else if (e.key === 'Escape') {
+                                            e.preventDefault()
+                                            setShowEditMentionDropdown(false)
+                                            return
+                                          }
+                                        }
+                                      }}
+                                      onBlur={() => {
+                                        setTimeout(() => setShowEditMentionDropdown(false), 200)
+                                      }}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent text-sm"
+                                      autoFocus
+                                    />
+                                    {showEditMentionDropdown && availableUsers.length > 0 && (
+                                      <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                                        {filteredEditMentionUsers.length > 0 ? (
+                                          filteredEditMentionUsers.map((u) => (
+                                            <button
+                                              key={u.id}
+                                              type="button"
+                                              onMouseDown={(e) => {
+                                                e.preventDefault()
+                                                handleEditMentionSelect(u.name)
+                                              }}
+                                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                            >
+                                              {u.avatar ? (
+                                                <img
+                                                  src={u.avatar}
+                                                  alt={u.name}
+                                                  className="w-8 h-8 rounded-full object-cover"
+                                                />
+                                              ) : (
+                                                <div className="w-8 h-8 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm">
+                                                  {u.name.charAt(0)}
+                                                </div>
+                                              )}
+                                              <span className="font-semibold">{u.name}</span>
+                                            </button>
+                                          ))
+                                        ) : (
+                                          <div className="px-4 py-2 text-gray-500 text-sm">
+                                            사용자를 찾을 수 없습니다
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 ) : (
-                                  <p className="text-gray-700">{comment.content}</p>
+                                  <div className="text-gray-700">
+                                    {parseMentions(comment.content).map((part, idx) =>
+                                      part.type === 'mention' ? (
+                                        <Link
+                                          key={idx}
+                                          href={part.userId ? `/profile/${part.userId}` : '#'}
+                                          className="text-primary-blue font-semibold hover:underline"
+                                        >
+                                          {part.content}
+                                        </Link>
+                                      ) : (
+                                        <span key={idx}>{part.content}</span>
+                                      )
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </div>
