@@ -310,13 +310,14 @@ export default function PostDetailPage() {
                   {post.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-6">
                       {post.tags.map((tag, index) => (
-                        <span
+                        <Link
                           key={index}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-primary-blue text-white rounded-full text-sm"
+                          href={`/search?tag=${encodeURIComponent(tag)}`}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-primary-blue text-white rounded-full text-sm hover:bg-opacity-90 transition-colors cursor-pointer"
                         >
                           <Tag size={14} />
                           {tag}
-                        </span>
+                        </Link>
                       ))}
                     </div>
                   )}

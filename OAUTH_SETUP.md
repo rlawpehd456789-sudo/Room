@@ -187,3 +187,4 @@ LINE_CLIENT_SECRET=복사한_Channel_secret_여기에_붙여넣기
 - 정기적으로 Secret을 갱신하는 것을 권장합니다
 
 
+

@@ -184,22 +184,16 @@ export default function Home() {
               transition={{ duration: scrollDirection === 'down' ? 0.8 : 0, ease: "easeOut" }}
             >
               <div className="flex items-center justify-between mb-4">
-                <motion.div
-                  className="flex-1"
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: false, margin: "-100px" }}
-                  transition={{ duration: scrollDirection === 'down' ? 0.6 : 0, delay: scrollDirection === 'down' ? 0.2 : 0, ease: "easeOut" }}
-                >
-                  <h2 className="text-2xl font-bold text-primary-dark mb-2">
-                    {feedType === 'following' ? 'FOLLOWER FEED' : '最新の投稿'}
+                <div className="flex-1">
+                  <h2 className="text-sm lg:text-base font-extrabold uppercase leading-[0.8] tracking-[0.15em] text-primary-blue mb-2">
+                    {feedType === 'following' ? 'FOLLOWER FEED' : 'LATEST POSTS'}
                   </h2>
                   <p className="text-gray-600">
                     {feedType === 'following'
                       ? 'フォローユーザーの投稿をご覧ください'
                       : 'みんなの部屋のインテリアを見てみましょう'}
                   </p>
-                </motion.div>
+                </div>
                 <motion.div 
                   className="flex gap-2 bg-white rounded-lg p-1 shadow-sm ml-4"
                   initial={{ opacity: 0, x: 30 }}

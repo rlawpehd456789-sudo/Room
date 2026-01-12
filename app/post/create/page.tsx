@@ -14,6 +14,7 @@ export default function CreatePostPage() {
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
+  const [prevTagInput, setPrevTagInput] = useState('')
   const [isPublic, setIsPublic] = useState(true)
 
   useEffect(() => {
@@ -48,13 +49,51 @@ export default function CreatePostPage() {
     setImages((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const handleTagInputChange = (value: string) => {
+    // "#"로 시작하는 경우 처리
+    if (value.startsWith('#')) {
+      const tagText = value.slice(1)
+      
+      // 이전 값과 비교하여 공백이 새로 추가되었는지 확인
+      const prevTagText = prevTagInput.startsWith('#') ? prevTagInput.slice(1) : prevTagInput
+      
+      // 공백이 새로 추가되었고, 공백 전에 텍스트가 있는 경우
+      if (tagText.includes(' ') && !prevTagText.includes(' ') && tagText.trim().length > 0) {
+        const spaceIndex = tagText.indexOf(' ')
+        const newTag = tagText.substring(0, spaceIndex).trim()
+        
+        if (newTag && !tags.includes(newTag)) {
+          setTags((prev) => [...prev, newTag])
+        }
+        
+        // 공백 후의 텍스트만 남김
+        const remaining = tagText.substring(spaceIndex + 1)
+        setTagInput(remaining.trim() ? `#${remaining.trim()}` : '')
+        setPrevTagInput(remaining.trim() ? `#${remaining.trim()}` : '')
+        return
+      }
+    }
+    
+    setTagInput(value)
+    setPrevTagInput(value)
+  }
+
   const handleTagAdd = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault()
-      if (!tags.includes(tagInput.trim())) {
-        setTags((prev) => [...prev, tagInput.trim()])
+      
+      let tagToAdd = tagInput.trim()
+      
+      // "#"로 시작하면 제거
+      if (tagToAdd.startsWith('#')) {
+        tagToAdd = tagToAdd.slice(1).trim()
+      }
+      
+      if (tagToAdd && !tags.includes(tagToAdd)) {
+        setTags((prev) => [...prev, tagToAdd])
       }
       setTagInput('')
+      setPrevTagInput('')
     }
   }
 
@@ -187,10 +226,10 @@ export default function CreatePostPage() {
                   <input
                     type="text"
                     value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
+                    onChange={(e) => handleTagInputChange(e.target.value)}
                     onKeyDown={handleTagAdd}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                    placeholder="タグを入力してEnterキーを押してください"
+                    placeholder="#タグ名を入力（Enterキーまたはスペースで追加）"
                   />
                 </div>
                 {tags.length > 0 && (

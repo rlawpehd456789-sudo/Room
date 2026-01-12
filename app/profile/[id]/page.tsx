@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { UserPlus, UserMinus } from 'lucide-react'
+import { UserPlus, UserMinus, Plus } from 'lucide-react'
 import Header from '@/components/Header'
 import PostCard from '@/components/PostCard'
 import { useStore } from '@/store/useStore'
@@ -146,15 +146,17 @@ export default function ProfilePage() {
 
           {/* 投稿一覧 */}
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <h2 className="text-2xl font-bold">投稿</h2>
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-lg lg:text-xl font-extrabold uppercase leading-[0.8] tracking-[0.15em] transition-colors text-primary-blue">
+                MYFEED
+              </span>
               {isOwnProfile && (
                 <button
                   onClick={() => router.push('/post/create')}
-                  className="text-2xl hover:scale-110 transition-transform cursor-pointer"
+                  className="hover:scale-110 transition-transform cursor-pointer"
                   title="新しい投稿を作成"
                 >
-                  ➕
+                  <Plus size={24} className="text-primary-blue" />
                 </button>
               )}
             </div>

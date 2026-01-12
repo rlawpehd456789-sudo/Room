@@ -133,8 +133,8 @@ export default function FeedPage() {
           <div className="mb-6 mt-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-primary-dark mb-2">
-                  {feedType === 'following' ? 'FOLLOWER FEED' : '最新の投稿'}
+                <h2 className="text-sm lg:text-base font-extrabold uppercase leading-[0.8] tracking-[0.15em] text-primary-blue mb-2">
+                  {feedType === 'following' ? 'FOLLOWER FEED' : 'LATEST POSTS'}
                 </h2>
                 <p className="text-gray-600">
                   {feedType === 'following'

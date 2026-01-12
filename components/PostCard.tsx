@@ -84,12 +84,14 @@ export default function PostCard({ post }: PostCardProps) {
           {post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
               {post.tags.slice(0, 3).map((tag, index) => (
-                <span
+                <Link
                   key={index}
-                  className="text-xs px-2 py-1 bg-primary-gray rounded text-gray-600"
+                  href={`/search?tag=${encodeURIComponent(tag)}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-xs px-2 py-1 bg-primary-gray rounded text-gray-600 hover:bg-primary-blue hover:text-white transition-colors cursor-pointer"
                 >
                   #{tag}
-                </span>
+                </Link>
               ))}
             </div>
           )}
