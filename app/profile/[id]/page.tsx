@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { UserPlus, UserMinus, Plus, X } from 'lucide-react'
+import { UserPlus, UserMinus, Plus, X, Settings, Bookmark, Bell, EyeOff } from 'lucide-react'
 import Header from '@/components/Header'
 import PostCard from '@/components/PostCard'
 import { useStore } from '@/store/useStore'
@@ -27,7 +27,12 @@ export default function ProfilePage() {
   const [showFollowingModal, setShowFollowingModal] = useState(false)
   const [followersList, setFollowersList] = useState<UserInfo[]>([])
   const [followingList, setFollowingList] = useState<UserInfo[]>([])
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false)
+  const [showSavedPostsModal, setShowSavedPostsModal] = useState(false)
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false)
+  const [showHiddenPostsModal, setShowHiddenPostsModal] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
+  const settingsMenuRef = useRef<HTMLDivElement>(null)
   
   // 게시물에서 사용자 정보 가져오기 (첫 번째 게시물 기준)
   const profileUserFromPost = userPosts.length > 0 
@@ -188,16 +193,22 @@ export default function ProfilePage() {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         setShowFollowersModal(false)
         setShowFollowingModal(false)
+        setShowSavedPostsModal(false)
+        setShowNotificationsModal(false)
+        setShowHiddenPostsModal(false)
+      }
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target as Node)) {
+        setIsSettingsMenuOpen(false)
       }
     }
 
-    if (showFollowersModal || showFollowingModal) {
+    if (showFollowersModal || showFollowingModal || showSavedPostsModal || showNotificationsModal || showHiddenPostsModal || isSettingsMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => {
         document.removeEventListener('mousedown', handleClickOutside)
       }
     }
-  }, [showFollowersModal, showFollowingModal])
+  }, [showFollowersModal, showFollowingModal, showSavedPostsModal, showNotificationsModal, showHiddenPostsModal, isSettingsMenuOpen])
 
   // 모달 열릴 때 목록 업데이트
   useEffect(() => {
@@ -256,38 +267,84 @@ export default function ProfilePage() {
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <h1 className="text-3xl font-bold">{displayUser.name}</h1>
-                  {!isOwnProfile && user && (
-                    <button
-                      onClick={() => {
-                        if (following) {
-                          unfollowUser(profileUserId)
-                        } else {
-                          followUser(profileUserId)
-                        }
-                        // 팔로우/언팔로우 후 숫자 업데이트
-                        setTimeout(() => {
-                          calculateCounts()
-                        }, 100)
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
-                        following
-                          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          : 'bg-primary-blue text-white hover:bg-opacity-90'
-                      }`}
-                    >
-                      {following ? (
-                        <>
-                          <UserMinus size={18} />
-                          <span>フォロー中</span>
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus size={18} />
-                          <span>フォロー</span>
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {isOwnProfile && (
+                      <div className="relative" ref={settingsMenuRef}>
+                        <button
+                          onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
+                          className="p-2 text-primary-blue hover:text-primary-blue hover:bg-blue-50 rounded-full transition-colors"
+                        >
+                          <Settings size={20} />
+                        </button>
+                        {isSettingsMenuOpen && (
+                          <div className="absolute -right-2 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[200px] z-50">
+                            <button
+                              onClick={() => {
+                                setShowSavedPostsModal(true)
+                                setIsSettingsMenuOpen(false)
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                            >
+                              <Bookmark size={16} />
+                              保存投稿
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowNotificationsModal(true)
+                                setIsSettingsMenuOpen(false)
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                            >
+                              <Bell size={16} />
+                              通知
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowHiddenPostsModal(true)
+                                setIsSettingsMenuOpen(false)
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                            >
+                              <EyeOff size={16} />
+                              非表示にした投稿
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {!isOwnProfile && user && (
+                      <button
+                        onClick={() => {
+                          if (following) {
+                            unfollowUser(profileUserId)
+                          } else {
+                            followUser(profileUserId)
+                          }
+                          // 팔로우/언팔로우 후 숫자 업데이트
+                          setTimeout(() => {
+                            calculateCounts()
+                          }, 100)
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+                          following
+                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            : 'bg-primary-blue text-white hover:bg-opacity-90'
+                        }`}
+                      >
+                        {following ? (
+                          <>
+                            <UserMinus size={18} />
+                            <span>フォロー中</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus size={18} />
+                            <span>フォロー</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <p className="text-gray-600 mb-4">{displayUser.email}</p>
                 
@@ -511,6 +568,179 @@ export default function ProfilePage() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 보존게시물 모달 */}
+      {showSavedPostsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div
+            ref={modalRef}
+            className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-xl font-bold">保存投稿</h2>
+              <button
+                onClick={() => setShowSavedPostsModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+              {user && typeof window !== 'undefined' ? (() => {
+                const savedKey = `my-room-saved-${user.id}`
+                const saved = localStorage.getItem(savedKey)
+                const savedPostIds = saved ? JSON.parse(saved) : []
+                const savedPosts = posts.filter((post) => savedPostIds.includes(post.id))
+                
+                if (savedPosts.length === 0) {
+                  return <p className="text-center text-gray-500 py-8">保存した投稿がありません</p>
+                }
+                
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {savedPosts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                )
+              })() : (
+                <p className="text-center text-gray-500 py-8">ログインが必要です</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 알림 모달 */}
+      {showNotificationsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div
+            ref={modalRef}
+            className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-xl font-bold">通知</h2>
+              <button
+                onClick={() => setShowNotificationsModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+              {user && typeof window !== 'undefined' ? (() => {
+                const notificationsKey = `my-room-notifications-${user.id}`
+                const savedNotifications = localStorage.getItem(notificationsKey)
+                const notifications = savedNotifications ? JSON.parse(savedNotifications) : []
+                
+                if (!Array.isArray(notifications) || notifications.length === 0) {
+                  return <p className="text-center text-gray-500 py-8">通知がありません</p>
+                }
+                
+                return (
+                  <div className="space-y-3">
+                    {notifications.map((notification: any) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 rounded-lg border ${
+                          notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {notification.fromUserAvatar ? (
+                            <img
+                              src={notification.fromUserAvatar}
+                              alt={notification.fromUserName}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-primary-blue flex items-center justify-center text-white">
+                              {notification.fromUserName?.charAt(0) || 'U'}
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm">
+                              <span className="font-semibold">{notification.fromUserName}</span>
+                              {notification.type === 'like' && 'さんが投稿にいいねを押しました'}
+                              {notification.type === 'comment' && 'さんがコメントを残しました'}
+                              {notification.type === 'follow' && 'さんがフォローを開始しました'}
+                              {notification.type === 'mention' && 'さんがあなたをメンションしました'}
+                            </p>
+                            {notification.content && (
+                              <p className="text-xs text-gray-600 mt-1">{notification.content}</p>
+                            )}
+                            <p className="text-xs text-gray-400 mt-1">
+                              {new Date(notification.createdAt).toLocaleString('ja-JP')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })() : (
+                <p className="text-center text-gray-500 py-8">ログインが必要です</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 비표시로한 게시물 모달 */}
+      {showHiddenPostsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div
+            ref={modalRef}
+            className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-xl font-bold">非表示にした投稿</h2>
+              <button
+                onClick={() => setShowHiddenPostsModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+              {user && typeof window !== 'undefined' ? (() => {
+                const hiddenKey = `my-room-hidden-${user.id}`
+                const hidden = localStorage.getItem(hiddenKey)
+                const hiddenPostIds = hidden ? JSON.parse(hidden) : []
+                const hiddenPosts = posts.filter((post) => hiddenPostIds.includes(post.id))
+                
+                if (hiddenPosts.length === 0) {
+                  return <p className="text-center text-gray-500 py-8">非表示にした投稿がありません</p>
+                }
+                
+                return (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {hiddenPosts.map((post) => (
+                        <div key={post.id} className="relative">
+                          <PostCard post={post} />
+                          <button
+                            onClick={() => {
+                              const updatedHidden = hiddenPostIds.filter((id: string) => id !== post.id)
+                              localStorage.setItem(hiddenKey, JSON.stringify(updatedHidden))
+                              window.location.reload()
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors z-10"
+                          >
+                            非表示を解除
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })() : (
+                <p className="text-center text-gray-500 py-8">ログインが必要です</p>
               )}
             </div>
           </div>

@@ -1,18 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { Heart, MessageCircle, MoreHorizontal } from 'lucide-react'
+import { Heart, MessageCircle, MoreHorizontal, Bookmark, UserPlus, UserMinus, EyeOff } from 'lucide-react'
 import { Post } from '@/store/useStore'
 import { useStore } from '@/store/useStore'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { useState, useRef, useEffect } from 'react'
 
 interface PostCardProps {
   post: Post
 }
 
 export default function PostCard({ post }: PostCardProps) {
-  const { toggleLike, user } = useStore()
+  const { toggleLike, user, followUser, unfollowUser, isFollowing } = useStore()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
+  const menuRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -20,6 +25,108 @@ export default function PostCard({ post }: PostCardProps) {
       toggleLike(post.id)
     }
   }
+
+  // 메뉴 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMenuOpen])
+
+  const handleMenuToggle = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setMenuPosition({
+        top: rect.top,
+        left: rect.right + 8, // 버튼 오른쪽에 8px 여백
+      })
+    }
+    setIsMenuOpen(!isMenuOpen)
+  }
+
+  const handleSave = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (user) {
+      const savedKey = `my-room-saved-${user.id}`
+      const saved = localStorage.getItem(savedKey)
+      const savedPosts = saved ? JSON.parse(saved) : []
+      
+      if (!savedPosts.includes(post.id)) {
+        savedPosts.push(post.id)
+        localStorage.setItem(savedKey, JSON.stringify(savedPosts))
+        alert('投稿を保存しました。')
+      } else {
+        alert('既に保存された投稿です。')
+      }
+    } else {
+      alert('ログインが必要です。')
+    }
+    setIsMenuOpen(false)
+  }
+
+  const handleFollow = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (user) {
+      if (user.id === post.userId) {
+        alert('自分の投稿です。')
+        return
+      }
+      followUser(post.userId)
+      setIsMenuOpen(false)
+    } else {
+      alert('ログインが必要です。')
+      setIsMenuOpen(false)
+    }
+  }
+
+  const handleUnfollow = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (user) {
+      unfollowUser(post.userId)
+      setIsMenuOpen(false)
+    } else {
+      alert('ログインが必要です。')
+      setIsMenuOpen(false)
+    }
+  }
+
+  const handleHide = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (user) {
+      const hiddenKey = `my-room-hidden-${user.id}`
+      const hidden = localStorage.getItem(hiddenKey)
+      const hiddenPosts = hidden ? JSON.parse(hidden) : []
+      
+      if (!hiddenPosts.includes(post.id)) {
+        hiddenPosts.push(post.id)
+        localStorage.setItem(hiddenKey, JSON.stringify(hiddenPosts))
+        alert('投稿を非表示に設定しました。')
+        // 페이지 새로고침하여 숨김 처리된 게시글 제거
+        window.location.reload()
+      }
+    } else {
+      alert('ログインが必要です。')
+    }
+    setIsMenuOpen(false)
+  }
+
+  const following = user ? isFollowing(post.userId) : false
 
   return (
     <Link href={`/post/${post.id}`}>
@@ -69,9 +176,59 @@ export default function PostCard({ post }: PostCardProps) {
                 </p>
               </div>
             </Link>
-            <button className="text-gray-400 hover:text-gray-600">
-              <MoreHorizontal size={20} />
-            </button>
+            <div className="relative" ref={menuRef}>
+              <button 
+                ref={buttonRef}
+                onClick={handleMenuToggle}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <MoreHorizontal size={20} />
+              </button>
+              {isMenuOpen && (
+                <div 
+                  className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[180px] z-50"
+                  style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+                >
+                  <button
+                    onClick={handleSave}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                  >
+                    <Bookmark size={16} />
+                    保存
+                  </button>
+                  {user && user.id !== post.userId && (
+                    <>
+                      {following ? (
+                        <button
+                          onClick={handleUnfollow}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                        >
+                          <UserMinus size={16} />
+                          フォローを解除
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleFollow}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                        >
+                          <UserPlus size={16} />
+                          フォロー
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {user && user.id !== post.userId && (
+                    <button
+                      onClick={handleHide}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                    >
+                      <EyeOff size={16} />
+                      非表示にする
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <h3 className="font-bold text-lg mb-2 line-clamp-2">{post.title}</h3>

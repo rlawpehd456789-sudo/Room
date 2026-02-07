@@ -113,6 +113,19 @@ export default function Home() {
 
   // フィードタイプに応じて投稿をフィルタリング
   const filteredPosts = useMemo(() => {
+    let result = posts
+
+    // 비표시 게시글 필터링
+    if (user && typeof window !== 'undefined') {
+      const hiddenKey = `my-room-hidden-${user.id}`
+      const hidden = localStorage.getItem(hiddenKey)
+      const hiddenPosts = hidden ? JSON.parse(hidden) : []
+      
+      if (Array.isArray(hiddenPosts) && hiddenPosts.length > 0) {
+        result = result.filter((post) => !hiddenPosts.includes(post.id))
+      }
+    }
+
     if (feedType === 'following') {
       // フォローフィードの場合
       if (!user || !user.id) {
@@ -132,7 +145,7 @@ export default function Home() {
       )
       
       // フォローしたユーザーの投稿のみをフィルタリング
-      return posts.filter((post) => {
+      return result.filter((post) => {
         // post.userIdが存在しない場合は除外
         if (!post.userId || post.userId === '') {
           return false
@@ -143,7 +156,7 @@ export default function Home() {
         return followingSet.has(normalizedUserId)
       })
     }
-    return posts
+    return result
   }, [feedType, user, posts, following])
 
   return (
