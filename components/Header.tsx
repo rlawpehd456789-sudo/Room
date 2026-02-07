@@ -167,7 +167,7 @@ export default function Header() {
                   {showNotifications && (
                     <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[500px] overflow-hidden flex flex-col">
                       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                        <h3 className="font-bold text-lg">알림</h3>
+                        <h3 className="font-bold text-lg">通知</h3>
                         {unreadCount > 0 && (
                           <button
                             onClick={() => {
@@ -175,14 +175,14 @@ export default function Header() {
                             }}
                             className="text-sm text-primary-blue hover:underline"
                           >
-                            모두 읽음
+                            すべて既読
                           </button>
                         )}
                       </div>
                       <div className="overflow-y-auto max-h-[400px]">
                         {sortedNotifications.length === 0 ? (
                           <div className="p-8 text-center text-gray-500">
-                            알림이 없습니다
+                            通知がありません
                           </div>
                         ) : (
                           sortedNotifications.map((notification) => (
@@ -215,10 +215,10 @@ export default function Header() {
                                     )}
                                   </div>
                                   <p className="text-sm text-gray-600 mb-1">
-                                    {notification.type === 'mention' && '님이 멘션했습니다'}
-                                    {notification.type === 'like' && '님이 좋아요를 눌렀습니다'}
-                                    {notification.type === 'comment' && '님이 댓글을 남겼습니다'}
-                                    {notification.type === 'follow' && '님이 팔로우했습니다'}
+                                    {notification.type === 'mention' && 'さんがメンションしました'}
+                                    {notification.type === 'like' && 'さんがいいねを押しました'}
+                                    {notification.type === 'comment' && 'さんがコメントを残しました'}
+                                    {notification.type === 'follow' && 'さんがフォローしました'}
                                   </p>
                                   {notification.content && (
                                     <p className="text-xs text-gray-500 line-clamp-2 mt-1">

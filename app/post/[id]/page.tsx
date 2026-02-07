@@ -702,7 +702,7 @@ export default function PostDetailPage() {
                                 // 드롭다운 클릭 시에는 닫히지 않도록 약간의 지연 추가
                                 setTimeout(() => setShowMentionDropdown(false), 200)
                               }}
-                              placeholder="コメントを入力... @닉네임으로 멘션"
+                              placeholder="コメントを入力... @ニックネームでメンション"
                               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                             />
                             {showMentionDropdown && availableUsers.length > 0 && (
@@ -770,7 +770,7 @@ export default function PostDetailPage() {
                                   </>
                                 ) : (
                                   <div className="px-4 py-2 text-gray-500 text-sm">
-                                    사용자를 찾을 수 없습니다
+                                    ユーザーが見つかりません
                                   </div>
                                 )}
                               </div>
@@ -960,7 +960,7 @@ export default function PostDetailPage() {
                                           </>
                                         ) : (
                                           <div className="px-4 py-2 text-gray-500 text-sm">
-                                            사용자를 찾을 수 없습니다
+                                            ユーザーが見つかりません
                                           </div>
                                         )}
                                       </div>

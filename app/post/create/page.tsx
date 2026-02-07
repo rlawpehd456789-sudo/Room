@@ -372,7 +372,7 @@ export default function CreatePostPage() {
                     }}
                     rows={4}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                    placeholder="あなたの部屋について教えてください... @닉네임으로 멘션"
+                    placeholder="あなたの部屋について教えてください... @ニックネームでメンション"
                   />
                   {showMentionDropdown && availableUsers.length > 0 && (
                     <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
@@ -403,7 +403,7 @@ export default function CreatePostPage() {
                         ))
                       ) : (
                         <div className="px-4 py-2 text-gray-500 text-sm">
-                          사용자를 찾을 수 없습니다
+                          ユーザーが見つかりません
                         </div>
                       )}
                     </div>

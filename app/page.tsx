@@ -160,7 +160,7 @@ export default function Home() {
             transition={{ duration: 1.2, ease: "easeOut" }}
           >
             <Image
-              src="/소개페이지4.jpeg"
+              src="/紹介ページ4.jpeg"
               alt="Background"
               fill
               className="object-cover"
@@ -309,4 +309,3 @@ export default function Home() {
     </div>
   )
 }
-
