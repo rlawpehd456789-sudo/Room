@@ -303,8 +303,9 @@ export const useStore = create<AppState>((set, get) => ({
   setFollowing: (following) => {
     const state = get()
     // 본인은 팔로우 목록에서 제외
-    const filteredFollowing = state.user 
-      ? following.filter((id) => id !== state.user.id)
+    const userId = state.user?.id
+    const filteredFollowing = userId 
+      ? following.filter((id) => id !== userId)
       : following
     set({ following: filteredFollowing })
     
