@@ -114,10 +114,14 @@ export default function PostDetailPage() {
   )
 
   // 멘션된 사용자를 파싱하여 표시하는 함수
-  const parseMentions = (text: string) => {
+  type TextPart = { type: 'text'; content: string }
+  type MentionPart = { type: 'mention'; content: string; userId?: string }
+  type ParsedPart = TextPart | MentionPart
+
+  const parseMentions = (text: string): ParsedPart[] => {
     // 한글, 영문, 숫자, 언더스코어를 포함한 닉네임 지원
     const mentionRegex = /@([가-힣a-zA-Z0-9_]+)/g
-    const parts: Array<{ type: 'text' | 'mention'; content: string; userId?: string }> = []
+    const parts: ParsedPart[] = []
     let lastIndex = 0
     let match
 
