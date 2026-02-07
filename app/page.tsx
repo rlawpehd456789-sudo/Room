@@ -193,8 +193,8 @@ export default function Home() {
               className="mb-6"
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, margin: "-100px" }}
-              transition={{ duration: scrollDirection === 'down' ? 0.8 : 0, ease: "easeOut" }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex-1">
@@ -211,8 +211,8 @@ export default function Home() {
                   className="flex gap-2 bg-white rounded-lg p-1 shadow-sm ml-4"
                   initial={{ opacity: 0, x: 30 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: false, margin: "-100px" }}
-                  transition={{ duration: scrollDirection === 'down' ? 0.6 : 0, delay: scrollDirection === 'down' ? 0.3 : 0, ease: "easeOut" }}
+                  viewport={{ once: true, margin: "-100px" }}
+                  transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
                 >
                   <button
                     onClick={() => {
@@ -255,8 +255,8 @@ export default function Home() {
                 className="text-center py-12"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, margin: "-50px" }}
-                transition={{ duration: scrollDirection === 'down' ? 0.6 : 0, ease: "easeOut" }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
               >
                 <p className="text-gray-500 mb-4">
                   {feedType === 'following'
@@ -290,18 +290,18 @@ export default function Home() {
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
-                viewport={{ once: false, margin: "-50px" }}
-                transition={{ duration: scrollDirection === 'down' ? 0.6 : 0, ease: "easeOut" }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
               >
                 {filteredPosts.map((post, index) => (
                   <motion.div
                     key={post.id}
                     initial={{ opacity: 0, y: 50 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: false, margin: "-50px" }}
+                    viewport={{ once: true, margin: "-50px" }}
                     transition={{ 
-                      duration: scrollDirection === 'down' ? 0.6 : 0, 
-                      delay: scrollDirection === 'down' ? index * 0.1 : 0,
+                      duration: 0.6, 
+                      delay: index * 0.1,
                       ease: "easeOut" 
                     }}
                   >

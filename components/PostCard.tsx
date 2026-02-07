@@ -15,7 +15,6 @@ interface PostCardProps {
 export default function PostCard({ post }: PostCardProps) {
   const { toggleLike, user, followUser, unfollowUser, isFollowing } = useStore()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -63,13 +62,6 @@ export default function PostCard({ post }: PostCardProps) {
   const handleMenuToggle = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect()
-      setMenuPosition({
-        top: rect.top,
-        left: rect.right + 8, // 버튼 오른쪽에 8px 여백
-      })
-    }
     setIsMenuOpen(!isMenuOpen)
   }
 
@@ -203,8 +195,7 @@ export default function PostCard({ post }: PostCardProps) {
               </button>
               {isMenuOpen && (
                 <div 
-                  className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[180px] z-50"
-                  style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+                  className="absolute bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[180px] z-50 right-0 top-8"
                 >
                   <button
                     onClick={handleSave}
