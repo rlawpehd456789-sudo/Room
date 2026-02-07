@@ -8,7 +8,7 @@ import { useStore } from '@/store/useStore'
 
 export default function CreatePostPage() {
   const router = useRouter()
-  const { user, addPost, posts, addNotification } = useStore()
+  const { user, addPost, posts, following, addNotification } = useStore()
   const [images, setImages] = useState<string[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -105,7 +105,8 @@ export default function CreatePostPage() {
     setTags((prev) => prev.filter((t) => t !== tag))
   }
 
-  // 멘션 가능한 사용자 목록 추출 (모든 게시글 작성자 + 모든 코멘트 작성자)
+  // 멘션 가능한 사용자 목록 추출 (팔로우 리스트만)
+  // 모든 게시글에서 사용자 정보를 수집 (멘션 파싱용)
   const allUsersMap = new Map<string, { id: string; name: string; avatar?: string }>()
   posts.forEach((p) => {
     if (!allUsersMap.has(p.userId)) {
@@ -117,7 +118,12 @@ export default function CreatePostPage() {
       }
     })
   })
-  const availableUsers = Array.from(allUsersMap.values()).filter((u) => u.id !== user?.id)
+  const allUsers = Array.from(allUsersMap.values())
+  
+  // 팔로우 리스트만 멘션 가능 (팔로우하지 않은 사람은 제외)
+  const availableUsers = allUsers.filter((u) => {
+    return u.id !== user?.id && following.includes(u.id)
+  })
 
   // 멘션 필터링된 사용자 목록
   const filteredMentionUsers = availableUsers.filter((u) =>
@@ -189,8 +195,10 @@ export default function CreatePostPage() {
     }
   }, [showMentionDropdown])
 
-  // 멘션된 사용자 ID 목록 추출
+  // 멘션된 사용자 ID 목록 추출 (멘션을 한 사람 제외)
   const extractMentionedUserIds = (text: string): string[] => {
+    if (!user) return []
+    
     const mentionRegex = /@([가-힣a-zA-Z0-9_]+)/g
     const mentionedUserIds: string[] = []
     let match
@@ -198,13 +206,14 @@ export default function CreatePostPage() {
     while ((match = mentionRegex.exec(text)) !== null) {
       const mentionedName = match[1]
       const mentionedUser = availableUsers.find((u) => u.name === mentionedName)
-      if (mentionedUser && mentionedUser.id !== user?.id) {
+      // 멘션을 한 사람(user)은 제외하고, 실제 존재하는 사용자만 추가
+      if (mentionedUser && mentionedUser.id !== user.id) {
         mentionedUserIds.push(mentionedUser.id)
       }
     }
 
-    // 중복 제거
-    return Array.from(new Set(mentionedUserIds))
+    // 중복 제거 및 멘션을 한 사람 제외
+    return Array.from(new Set(mentionedUserIds)).filter((id) => id !== user.id)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -237,24 +246,27 @@ export default function CreatePostPage() {
 
     addPost(newPost)
 
-    // 설명에 멘션된 사용자들에게 알림 생성
+    // 설명에 멘션된 사용자들에게만 알림 생성 (멘션을 한 사람 제외)
     if (description) {
       const mentionedUserIds = extractMentionedUserIds(description)
       mentionedUserIds.forEach((mentionedUserId) => {
-        const mentionedUser = availableUsers.find((u) => u.id === mentionedUserId)
-        if (mentionedUser) {
-          addNotification({
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-            userId: mentionedUserId,
-            type: 'mention',
-            fromUserId: user.id,
-            fromUserName: user.name,
-            fromUserAvatar: user.avatar,
-            postId: newPost.id,
-            content: description,
-            read: false,
-            createdAt: new Date().toISOString(),
-          })
+        // 멘션을 한 사람(user)이 아닌 경우에만 알림 전송
+        if (mentionedUserId && mentionedUserId !== user.id) {
+          const mentionedUser = availableUsers.find((u) => u.id === mentionedUserId)
+          if (mentionedUser && mentionedUser.id !== user.id) {
+            addNotification({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              userId: mentionedUserId, // 멘션당한 사람에게만 알림
+              type: 'mention',
+              fromUserId: user.id, // 멘션을 한 사람
+              fromUserName: user.name,
+              fromUserAvatar: user.avatar,
+              postId: newPost.id,
+              content: description,
+              read: false,
+              createdAt: new Date().toISOString(),
+            })
+          }
         }
       })
     }

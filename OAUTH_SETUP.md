@@ -188,3 +188,6 @@ LINE_CLIENT_SECRET=복사한_Channel_secret_여기에_붙여넣기
 
 
 
+
+
+

@@ -113,26 +113,101 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       posts: state.posts.filter((post) => post.id !== postId),
     })),
-  toggleLike: (postId) =>
-    set((state) => ({
-      posts: state.posts.map((post) =>
-        post.id === postId
+  toggleLike: (postId) => {
+    const state = get()
+    const post = state.posts.find((p) => p.id === postId)
+    if (!post || !state.user) return
+    
+    const wasLiked = post.liked
+    const newLiked = !wasLiked
+    
+    set({
+      posts: state.posts.map((p) =>
+        p.id === postId
           ? {
-              ...post,
-              liked: !post.liked,
-              likes: post.liked ? post.likes - 1 : post.likes + 1,
+              ...p,
+              liked: newLiked,
+              likes: wasLiked ? p.likes - 1 : p.likes + 1,
             }
-          : post
+          : p
       ),
-    })),
-  addComment: (postId, comment) =>
-    set((state) => ({
-      posts: state.posts.map((post) =>
-        post.id === postId
-          ? { ...post, comments: [...post.comments, comment] }
-          : post
+    })
+    
+    // 좋아요 알림 생성 (본인의 게시물이 아니고, 좋아요를 누른 경우에만)
+    if (typeof window !== 'undefined' && newLiked && post.userId !== state.user.id) {
+      // 게시물 작성자의 알림 목록에 추가
+      const postOwnerNotificationsKey = `my-room-notifications-${post.userId}`
+      const existingNotifications = localStorage.getItem(postOwnerNotificationsKey)
+      const notifications = existingNotifications 
+        ? JSON.parse(existingNotifications) 
+        : []
+      
+      const newNotification = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        userId: post.userId, // 게시물 작성자
+        type: 'like' as const,
+        fromUserId: state.user.id, // 좋아요를 누른 사용자
+        fromUserName: state.user.name,
+        fromUserAvatar: state.user.avatar,
+        postId: postId,
+        read: false,
+        createdAt: new Date().toISOString(),
+      }
+      
+      notifications.unshift(newNotification)
+      localStorage.setItem(postOwnerNotificationsKey, JSON.stringify(notifications))
+      
+      // 현재 로그인한 사용자가 게시물 작성자인 경우 알림 목록 업데이트
+      if (state.user.id === post.userId) {
+        set({ notifications })
+      }
+    }
+  },
+  addComment: (postId, comment) => {
+    const state = get()
+    const post = state.posts.find((p) => p.id === postId)
+    if (!post) return
+    
+    set({
+      posts: state.posts.map((p) =>
+        p.id === postId
+          ? { ...p, comments: [...p.comments, comment] }
+          : p
       ),
-    })),
+    })
+    
+    // 댓글 알림 생성 (본인의 게시물이 아닌 경우에만)
+    if (typeof window !== 'undefined' && post.userId !== comment.userId) {
+      // 게시물 작성자의 알림 목록에 추가
+      const postOwnerNotificationsKey = `my-room-notifications-${post.userId}`
+      const existingNotifications = localStorage.getItem(postOwnerNotificationsKey)
+      const notifications = existingNotifications 
+        ? JSON.parse(existingNotifications) 
+        : []
+      
+      const newNotification = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        userId: post.userId, // 게시물 작성자
+        type: 'comment' as const,
+        fromUserId: comment.userId, // 댓글을 작성한 사용자
+        fromUserName: comment.userName,
+        fromUserAvatar: comment.userAvatar,
+        postId: postId,
+        commentId: comment.id,
+        content: comment.content,
+        read: false,
+        createdAt: new Date().toISOString(),
+      }
+      
+      notifications.unshift(newNotification)
+      localStorage.setItem(postOwnerNotificationsKey, JSON.stringify(notifications))
+      
+      // 현재 로그인한 사용자가 게시물 작성자인 경우 알림 목록 업데이트
+      if (state.user && state.user.id === post.userId) {
+        set({ notifications })
+      }
+    }
+  },
   updateComment: (postId, commentId, content) =>
     set((state) => ({
       posts: state.posts.map((post) =>
@@ -161,6 +236,9 @@ export const useStore = create<AppState>((set, get) => ({
     })),
   followUser: (userId) => {
     const state = get()
+    // 본인은 자기 자신을 팔로우할 수 없음
+    if (!state.user || state.user.id === userId) return
+    // 이미 팔로우 중이면 리턴
     if (state.following.includes(userId)) return
     
     const newFollowing = [...state.following, userId]
@@ -171,6 +249,39 @@ export const useStore = create<AppState>((set, get) => ({
         `my-room-following-${state.user.id}`,
         JSON.stringify(newFollowing)
       )
+      
+      // 팔로우 당한 사용자에게 알림 생성 (본인이 아닌 경우에만)
+      if (state.user.id !== userId) {
+        // 팔로우 당한 사용자의 정보 찾기 (게시물에서)
+        const followedUserPost = state.posts.find((p) => p.userId === userId)
+        if (followedUserPost) {
+          // 팔로우 당한 사용자의 알림 목록에 추가
+          const followedUserNotificationsKey = `my-room-notifications-${userId}`
+          const existingNotifications = localStorage.getItem(followedUserNotificationsKey)
+          const notifications = existingNotifications 
+            ? JSON.parse(existingNotifications) 
+            : []
+          
+          const newNotification = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            userId: userId, // 팔로우 당한 사용자
+            type: 'follow' as const,
+            fromUserId: state.user.id, // 팔로우를 한 사용자
+            fromUserName: state.user.name,
+            fromUserAvatar: state.user.avatar,
+            read: false,
+            createdAt: new Date().toISOString(),
+          }
+          
+          notifications.unshift(newNotification)
+          localStorage.setItem(followedUserNotificationsKey, JSON.stringify(notifications))
+          
+          // 현재 로그인한 사용자가 팔로우 당한 사용자인 경우 알림 목록 업데이트
+          if (state.user.id === userId) {
+            set({ notifications })
+          }
+        }
+      }
     }
   },
   unfollowUser: (userId) => {
@@ -189,23 +300,38 @@ export const useStore = create<AppState>((set, get) => ({
     return get().following.includes(userId)
   },
   setFollowing: (following) => {
-    set({ following })
     const state = get()
+    // 본인은 팔로우 목록에서 제외
+    const filteredFollowing = state.user 
+      ? following.filter((id) => id !== state.user.id)
+      : following
+    set({ following: filteredFollowing })
+    
     if (typeof window !== 'undefined' && state.user) {
       localStorage.setItem(
         `my-room-following-${state.user.id}`,
-        JSON.stringify(following)
+        JSON.stringify(filteredFollowing)
       )
     }
   },
   addNotification: (notification) => {
-    set((state) => ({ notifications: [notification, ...state.notifications] }))
-    const state = get()
-    if (typeof window !== 'undefined' && state.user) {
-      localStorage.setItem(
-        `my-room-notifications-${state.user.id}`,
-        JSON.stringify(state.notifications)
-      )
+    // 알림을 받을 사용자의 알림 목록에 추가
+    if (typeof window !== 'undefined') {
+      const targetUserId = notification.userId
+      const targetUserNotificationsKey = `my-room-notifications-${targetUserId}`
+      const existingNotifications = localStorage.getItem(targetUserNotificationsKey)
+      const notifications = existingNotifications 
+        ? JSON.parse(existingNotifications) 
+        : []
+      
+      notifications.unshift(notification)
+      localStorage.setItem(targetUserNotificationsKey, JSON.stringify(notifications))
+      
+      // 현재 로그인한 사용자가 알림을 받을 사용자인 경우 알림 목록 업데이트
+      const state = get()
+      if (state.user && state.user.id === targetUserId) {
+        set({ notifications })
+      }
     }
   },
   markNotificationAsRead: (notificationId) => {

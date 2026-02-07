@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Heart, MessageCircle, ArrowLeft, ArrowRight, Tag, Edit, Trash2, Check, X, MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
@@ -13,7 +13,7 @@ export default function PostDetailPage() {
   const params = useParams()
   const router = useRouter()
   const postId = params.id as string
-  const { posts, user, toggleLike, addComment, updateComment, deleteComment, setFollowing, followUser, unfollowUser, isFollowing, deletePost, addNotification } = useStore()
+  const { posts, user, following, toggleLike, addComment, updateComment, deleteComment, setFollowing, followUser, unfollowUser, isFollowing, deletePost, addNotification } = useStore()
   const [commentText, setCommentText] = useState('')
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
@@ -28,29 +28,82 @@ export default function PostDetailPage() {
 
   const post = posts.find((p) => p.id === postId)
 
-  // 멘션 가능한 사용자 목록 추출 (게시글 작성자 + 모든 코멘트 작성자)
-  const availableUsers = post
-    ? Array.from(
-        new Map([
-          [post.userId, { id: post.userId, name: post.userName, avatar: post.userAvatar }],
-          ...post.comments.map((c) => [c.userId, { id: c.userId, name: c.userName, avatar: c.userAvatar }]),
-        ]).values()
-      ).filter((u) => u.id !== user?.id) // 현재 사용자 제외
-    : []
-
   // 모든 게시글에서 사용자 정보를 수집 (멘션 파싱용)
-  const allUsersMap = new Map<string, { id: string; name: string; avatar?: string }>()
-  posts.forEach((p) => {
-    if (!allUsersMap.has(p.userId)) {
-      allUsersMap.set(p.userId, { id: p.userId, name: p.userName, avatar: p.userAvatar })
+  const allUsers = useMemo(() => {
+    const allUsersMap = new Map<string, { id: string; name: string; avatar?: string }>()
+    posts.forEach((p) => {
+      if (!allUsersMap.has(p.userId)) {
+        allUsersMap.set(p.userId, { id: p.userId, name: p.userName, avatar: p.userAvatar })
+      }
+      p.comments.forEach((c) => {
+        if (!allUsersMap.has(c.userId)) {
+          allUsersMap.set(c.userId, { id: c.userId, name: c.userName, avatar: c.userAvatar })
+        }
+      })
+    })
+    return Array.from(allUsersMap.values())
+  }, [posts])
+
+  // 교류 빈도 계산 함수 (댓글 수 + 좋아요 수 기반)
+  const calculateInteractionScore = useMemo(() => {
+    return (userId: string): number => {
+      if (!user || !posts) return 0
+      
+      let score = 0
+      // 해당 사용자의 게시물에 내가 남긴 댓글 수
+      posts.forEach((p) => {
+        if (p.userId === userId) {
+          const myComments = p.comments.filter((c) => c.userId === user.id)
+          score += myComments.length * 2 // 댓글은 가중치 2
+        }
+      })
+      
+      // 해당 사용자의 게시물에 내가 좋아요를 누른 수
+      posts.forEach((p) => {
+        if (p.userId === userId && p.liked) {
+          score += 1 // 좋아요는 가중치 1
+        }
+      })
+      
+      // 해당 사용자가 내 게시물에 남긴 댓글 수
+      posts.forEach((p) => {
+        if (p.userId === user.id) {
+          const theirComments = p.comments.filter((c) => c.userId === userId)
+          score += theirComments.length * 2
+        }
+      })
+      
+      return score
     }
-    p.comments.forEach((c) => {
-      if (!allUsersMap.has(c.userId)) {
-        allUsersMap.set(c.userId, { id: c.userId, name: c.userName, avatar: c.userAvatar })
+  }, [user, posts])
+
+  // 멘션 가능한 사용자 목록 추출 (팔로우 리스트만)
+  const availableUsers = useMemo(() => {
+    if (!post || !user) return []
+    
+    const usersMap = new Map<string, { id: string; name: string; avatar?: string; interactionScore: number }>()
+    
+    // 팔로우 리스트만 추가 (팔로우하지 않은 사람은 제외)
+    following.forEach((followedUserId) => {
+      if (followedUserId !== user.id && !usersMap.has(followedUserId)) {
+        const followedUser = allUsers.find((u) => u.id === followedUserId)
+        if (followedUser) {
+          usersMap.set(followedUserId, {
+            ...followedUser,
+            interactionScore: calculateInteractionScore(followedUserId),
+          })
+        }
       }
     })
-  })
-  const allUsers = Array.from(allUsersMap.values())
+    
+    // 교류 빈도가 높은 순으로 정렬 (교류 빈도가 같으면 이름 순)
+    return Array.from(usersMap.values()).sort((a, b) => {
+      if (b.interactionScore !== a.interactionScore) {
+        return b.interactionScore - a.interactionScore
+      }
+      return a.name.localeCompare(b.name)
+    })
+  }, [post, user, following, allUsers, calculateInteractionScore])
 
   // 멘션 필터링된 사용자 목록
   const filteredMentionUsers = availableUsers.filter((u) =>
@@ -184,8 +237,10 @@ export default function PostDetailPage() {
     }, 0)
   }
 
-  // 멘션된 사용자 ID 목록 추출
+  // 멘션된 사용자 ID 목록 추출 (멘션을 한 사람 제외)
   const extractMentionedUserIds = (text: string): string[] => {
+    if (!user) return []
+    
     const mentionRegex = /@([가-힣a-zA-Z0-9_]+)/g
     const mentionedUserIds: string[] = []
     let match
@@ -193,13 +248,14 @@ export default function PostDetailPage() {
     while ((match = mentionRegex.exec(text)) !== null) {
       const mentionedName = match[1]
       const mentionedUser = allUsers.find((u) => u.name === mentionedName)
-      if (mentionedUser && mentionedUser.id !== user?.id) {
+      // 멘션을 한 사람(user)은 제외하고, 실제 존재하는 사용자만 추가
+      if (mentionedUser && mentionedUser.id !== user.id) {
         mentionedUserIds.push(mentionedUser.id)
       }
     }
 
-    // 중복 제거
-    return Array.from(new Set(mentionedUserIds))
+    // 중복 제거 및 멘션을 한 사람 제외
+    return Array.from(new Set(mentionedUserIds)).filter((id) => id !== user.id)
   }
 
   const handleCommentSubmit = (e: React.FormEvent) => {
@@ -217,24 +273,27 @@ export default function PostDetailPage() {
 
     addComment(post.id, newComment)
 
-    // 멘션된 사용자들에게 알림 생성
+    // 멘션된 사용자들에게만 알림 생성 (멘션을 한 사람 제외)
     const mentionedUserIds = extractMentionedUserIds(commentText)
     mentionedUserIds.forEach((mentionedUserId) => {
-      const mentionedUser = allUsers.find((u) => u.id === mentionedUserId)
-      if (mentionedUser) {
-        addNotification({
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          userId: mentionedUserId,
-          type: 'mention',
-          fromUserId: user.id,
-          fromUserName: user.name,
-          fromUserAvatar: user.avatar,
-          postId: post.id,
-          commentId: newComment.id,
-          content: commentText.trim(),
-          read: false,
-          createdAt: new Date().toISOString(),
-        })
+      // 멘션을 한 사람(user)이 아닌 경우에만 알림 전송
+      if (mentionedUserId && mentionedUserId !== user.id) {
+        const mentionedUser = allUsers.find((u) => u.id === mentionedUserId)
+        if (mentionedUser && mentionedUser.id !== user.id) {
+          addNotification({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            userId: mentionedUserId, // 멘션당한 사람에게만 알림
+            type: 'mention',
+            fromUserId: user.id, // 멘션을 한 사람
+            fromUserName: user.name,
+            fromUserAvatar: user.avatar,
+            postId: post.id,
+            commentId: newComment.id,
+            content: commentText.trim(),
+            read: false,
+            createdAt: new Date().toISOString(),
+          })
+        }
       }
     })
 
@@ -305,24 +364,29 @@ export default function PostDetailPage() {
     if (!editCommentText.trim() || !post) return
     updateComment(post.id, commentId, editCommentText.trim())
 
-    // 수정된 댓글에 멘션된 사용자들에게 알림 생성
+    // 수정된 댓글에 멘션된 사용자들에게만 알림 생성 (멘션을 한 사람 제외)
+    if (!user) return
+    
     const mentionedUserIds = extractMentionedUserIds(editCommentText)
     mentionedUserIds.forEach((mentionedUserId) => {
-      const mentionedUser = allUsers.find((u) => u.id === mentionedUserId)
-      if (mentionedUser && user) {
-        addNotification({
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          userId: mentionedUserId,
-          type: 'mention',
-          fromUserId: user.id,
-          fromUserName: user.name,
-          fromUserAvatar: user.avatar,
-          postId: post.id,
-          commentId: commentId,
-          content: editCommentText.trim(),
-          read: false,
-          createdAt: new Date().toISOString(),
-        })
+      // 멘션을 한 사람(user)이 아닌 경우에만 알림 전송
+      if (mentionedUserId && mentionedUserId !== user.id) {
+        const mentionedUser = allUsers.find((u) => u.id === mentionedUserId)
+        if (mentionedUser && mentionedUser.id !== user.id) {
+          addNotification({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            userId: mentionedUserId, // 멘션당한 사람에게만 알림
+            type: 'mention',
+            fromUserId: user.id, // 멘션을 한 사람
+            fromUserName: user.name,
+            fromUserAvatar: user.avatar,
+            postId: post.id,
+            commentId: commentId,
+            content: editCommentText.trim(),
+            read: false,
+            createdAt: new Date().toISOString(),
+          })
+        }
       }
     })
 
@@ -642,32 +706,68 @@ export default function PostDetailPage() {
                               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                             />
                             {showMentionDropdown && availableUsers.length > 0 && (
-                              <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                              <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                                 {filteredMentionUsers.length > 0 ? (
-                                  filteredMentionUsers.map((u) => (
-                                    <button
-                                      key={u.id}
-                                      type="button"
-                                      onMouseDown={(e) => {
-                                        e.preventDefault() // onBlur 이벤트 방지
-                                        handleMentionSelect(u.name)
-                                      }}
-                                      className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-                                    >
-                                      {u.avatar ? (
-                                        <img
-                                          src={u.avatar}
-                                          alt={u.name}
-                                          className="w-8 h-8 rounded-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="w-8 h-8 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm">
-                                          {u.name.charAt(0)}
+                                  <>
+                                    {/* 처음 3명만 표시 */}
+                                    <div className="max-h-36 overflow-y-auto">
+                                      {filteredMentionUsers.slice(0, 3).map((u) => (
+                                        <button
+                                          key={u.id}
+                                          type="button"
+                                          onMouseDown={(e) => {
+                                            e.preventDefault() // onBlur 이벤트 방지
+                                            handleMentionSelect(u.name)
+                                          }}
+                                          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                        >
+                                          {u.avatar ? (
+                                            <img
+                                              src={u.avatar}
+                                              alt={u.name}
+                                              className="w-8 h-8 rounded-full object-cover"
+                                            />
+                                          ) : (
+                                            <div className="w-8 h-8 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm">
+                                              {u.name.charAt(0)}
+                                            </div>
+                                          )}
+                                          <span className="font-semibold">{u.name}</span>
+                                        </button>
+                                      ))}
+                                      {/* 3명 이상인 경우 생략 표시 */}
+                                      {filteredMentionUsers.length > 3 && (
+                                        <div className="px-4 py-2 text-gray-400 text-sm text-center border-t border-gray-100">
+                                          ...
                                         </div>
                                       )}
-                                      <span className="font-semibold">{u.name}</span>
-                                    </button>
-                                  ))
+                                      {/* 나머지 사용자들 (스크롤로 확인 가능) */}
+                                      {filteredMentionUsers.slice(3).map((u) => (
+                                        <button
+                                          key={u.id}
+                                          type="button"
+                                          onMouseDown={(e) => {
+                                            e.preventDefault() // onBlur 이벤트 방지
+                                            handleMentionSelect(u.name)
+                                          }}
+                                          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                        >
+                                          {u.avatar ? (
+                                            <img
+                                              src={u.avatar}
+                                              alt={u.name}
+                                              className="w-8 h-8 rounded-full object-cover"
+                                            />
+                                          ) : (
+                                            <div className="w-8 h-8 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm">
+                                              {u.name.charAt(0)}
+                                            </div>
+                                          )}
+                                          <span className="font-semibold">{u.name}</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </>
                                 ) : (
                                   <div className="px-4 py-2 text-gray-500 text-sm">
                                     사용자를 찾을 수 없습니다
@@ -796,32 +896,68 @@ export default function PostDetailPage() {
                                       autoFocus
                                     />
                                     {showEditMentionDropdown && availableUsers.length > 0 && (
-                                      <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                                      <div className="absolute bottom-full left-0 mb-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                                         {filteredEditMentionUsers.length > 0 ? (
-                                          filteredEditMentionUsers.map((u) => (
-                                            <button
-                                              key={u.id}
-                                              type="button"
-                                              onMouseDown={(e) => {
-                                                e.preventDefault()
-                                                handleEditMentionSelect(u.name)
-                                              }}
-                                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-                                            >
-                                              {u.avatar ? (
-                                                <img
-                                                  src={u.avatar}
-                                                  alt={u.name}
-                                                  className="w-8 h-8 rounded-full object-cover"
-                                                />
-                                              ) : (
-                                                <div className="w-8 h-8 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm">
-                                                  {u.name.charAt(0)}
+                                          <>
+                                            {/* 처음 3명만 표시 */}
+                                            <div className="max-h-36 overflow-y-auto">
+                                              {filteredEditMentionUsers.slice(0, 3).map((u) => (
+                                                <button
+                                                  key={u.id}
+                                                  type="button"
+                                                  onMouseDown={(e) => {
+                                                    e.preventDefault()
+                                                    handleEditMentionSelect(u.name)
+                                                  }}
+                                                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                                >
+                                                  {u.avatar ? (
+                                                    <img
+                                                      src={u.avatar}
+                                                      alt={u.name}
+                                                      className="w-8 h-8 rounded-full object-cover"
+                                                    />
+                                                  ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm">
+                                                      {u.name.charAt(0)}
+                                                    </div>
+                                                  )}
+                                                  <span className="font-semibold">{u.name}</span>
+                                                </button>
+                                              ))}
+                                              {/* 3명 이상인 경우 생략 표시 */}
+                                              {filteredEditMentionUsers.length > 3 && (
+                                                <div className="px-4 py-2 text-gray-400 text-sm text-center border-t border-gray-100">
+                                                  ...
                                                 </div>
                                               )}
-                                              <span className="font-semibold">{u.name}</span>
-                                            </button>
-                                          ))
+                                              {/* 나머지 사용자들 (스크롤로 확인 가능) */}
+                                              {filteredEditMentionUsers.slice(3).map((u) => (
+                                                <button
+                                                  key={u.id}
+                                                  type="button"
+                                                  onMouseDown={(e) => {
+                                                    e.preventDefault()
+                                                    handleEditMentionSelect(u.name)
+                                                  }}
+                                                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                                >
+                                                  {u.avatar ? (
+                                                    <img
+                                                      src={u.avatar}
+                                                      alt={u.name}
+                                                      className="w-8 h-8 rounded-full object-cover"
+                                                    />
+                                                  ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm">
+                                                      {u.name.charAt(0)}
+                                                    </div>
+                                                  )}
+                                                  <span className="font-semibold">{u.name}</span>
+                                                </button>
+                                              ))}
+                                            </div>
+                                          </>
                                         ) : (
                                           <div className="px-4 py-2 text-gray-500 text-sm">
                                             사용자를 찾을 수 없습니다
