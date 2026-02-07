@@ -13,7 +13,7 @@ export default function Header() {
   const router = useRouter()
   const { user, setUser, notifications = [], markNotificationAsRead, markAllNotificationsAsRead, getUnreadNotificationCount } = useStore()
   const [showNotifications, setShowNotifications] = useState(false)
-  const notificationRef = useRef<HTMLDivElement>(null)
+  const notificationRef = useRef<HTMLLIElement>(null)
 
   const handleLogout = () => {
     setUser(null)
