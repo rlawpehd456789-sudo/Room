@@ -43,6 +43,23 @@ export default function PostCard({ post }: PostCardProps) {
     }
   }, [isMenuOpen])
 
+  // 스크롤 시 메뉴 닫기
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isMenuOpen) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    if (isMenuOpen) {
+      window.addEventListener('scroll', handleScroll, { passive: true })
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [isMenuOpen])
+
   const handleMenuToggle = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
