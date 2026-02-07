@@ -22,6 +22,37 @@ export default function Header() {
     }
   }
 
+  // 알림 주기적으로 새로고침 (팔로우 등 실시간 업데이트를 위해)
+  useEffect(() => {
+    if (!user) return
+
+    const refreshNotifications = () => {
+      if (typeof window !== 'undefined') {
+        const savedNotifications = localStorage.getItem(`my-room-notifications-${user.id}`)
+        if (savedNotifications) {
+          try {
+            const parsed = JSON.parse(savedNotifications)
+            if (Array.isArray(parsed)) {
+              // setUser를 호출하여 알림 목록을 다시 로드
+              // (setUser는 알림 목록도 함께 로드함)
+              useStore.getState().setUser(user)
+            }
+          } catch {
+            // 무시
+          }
+        }
+      }
+    }
+
+    // 초기 로드
+    refreshNotifications()
+
+    // 주기적으로 새로고침 (3초마다)
+    const interval = setInterval(refreshNotifications, 3000)
+
+    return () => clearInterval(interval)
+  }, [user])
+
   // 알림 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

@@ -277,7 +277,8 @@ export const useStore = create<AppState>((set, get) => ({
           localStorage.setItem(followedUserNotificationsKey, JSON.stringify(notifications))
           
           // 현재 로그인한 사용자가 팔로우 당한 사용자인 경우 알림 목록 업데이트
-          if (state.user.id === userId) {
+          // (팔로우 당한 사용자가 현재 로그인한 사용자와 같은 경우)
+          if (state.user && state.user.id === userId) {
             set({ notifications })
           }
         }
