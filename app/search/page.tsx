@@ -167,7 +167,7 @@ export default function SearchPage() {
             ) : (
               <div className="text-center py-12">
                 <p className="text-gray-500 mb-4">
-                  投稿のタグを入力してください
+                  検索キーワードを入力するか、投稿のタグを入力してください
                 </p>
                 <p className="text-gray-400 text-sm">
                   投稿のタイトル、説明、タグ、ユーザー名で検索できます
